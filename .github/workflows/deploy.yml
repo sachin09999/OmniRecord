@@ -27,40 +27,18 @@ jobs:
       - name: Run build verification
         run: npm run build
 
-  deploy-remote:
-    name: Deploy to Remote Server / PC
+  deploy-self-hosted:
+    name: Deploy on Local Server (Self-Hosted Runner)
     needs: build-test
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted]
     if: github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Deploy via SSH to Remote Machine
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.REMOTE_HOST }}
-          username: ${{ secrets.REMOTE_USER }}
-          key: ${{ secrets.REMOTE_SSH_KEY }}
-          port: ${{ secrets.REMOTE_PORT || 22 }}
-          script: |
-            TARGET_DIR="${{ secrets.REMOTE_TARGET || '~/OmniRecord' }}"
-            
-            # Clone if repository does not exist on remote machine
-            if [ ! -d "$TARGET_DIR" ]; then
-              echo "Cloning repository on remote machine..."
-              git clone https://github.com/sachin09999/OmniRecord.git "$TARGET_DIR"
-            fi
-
-            cd "$TARGET_DIR"
-
-            echo "Fetching and pulling latest commits from main..."
-            git fetch origin main
-            git reset --hard origin/main
-
-            echo "Building and restarting Docker container on port 8877..."
-            docker compose down || true
-            docker compose up -d --build
-
-            echo "OmniRecord deployed successfully! Accessible at http://${{ secrets.REMOTE_HOST }}:8877/"
+      - name: Build and restart Docker container
+        run: |
+          docker compose down || true
+          docker compose up -d --build
+          echo "OmniRecord deployed successfully on local server!"
