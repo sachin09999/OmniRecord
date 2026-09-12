@@ -60,8 +60,7 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
     let isMounted = true;
     setIsFetchingRecordings(true);
 
-    const targetPath = camera.path || camera.relayUri || camera.name;
-    fetchCameraRecordings(apiBaseUrl, targetPath, currentDate).then((res) => {
+    fetchCameraRecordings(apiBaseUrl, camera, currentDate).then((res) => {
       if (isMounted) {
         setRecordings(res.recordings);
         setNeighbors(res.neighbors);

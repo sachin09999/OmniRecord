@@ -251,9 +251,24 @@ export interface FetchRecordingsResult {
   rawResponse?: RecordingsApiResponse;
 }
 
+export function extractCameraPath(camOrPath: string | Partial<Camera>): string {
+  if (typeof camOrPath === 'string') {
+    const match = camOrPath.match(/RTMP_\d+/i);
+    if (match) return match[0].toUpperCase();
+    return camOrPath;
+  }
+  if (camOrPath.relayUri && camOrPath.relayUri.startsWith('RTMP_')) return camOrPath.relayUri;
+  if (camOrPath.path && camOrPath.path.startsWith('RTMP_')) return camOrPath.path;
+  if (camOrPath.name) {
+    const match = camOrPath.name.match(/RTMP_\d+/i);
+    if (match) return match[0].toUpperCase();
+  }
+  return camOrPath.relayUri || camOrPath.path || camOrPath.name || 'RTMP_30';
+}
+
 export async function fetchCameraRecordings(
   apiBaseUrl: string = DEFAULT_API_BASE,
-  cameraPath: string = 'RTMP_30',
+  cameraPathInput: string | Partial<Camera> = 'RTMP_30',
   dateStr: string = '2026-09-11',
   customStartTime?: string,
   customEndTime?: string
@@ -262,7 +277,7 @@ export async function fetchCameraRecordings(
     ? { startTime: customStartTime, endTime: customEndTime }
     : calculateTimeRange(dateStr);
 
-  const cleanPath = cameraPath.includes('_') ? cameraPath.split('_').slice(-2).join('_') : cameraPath;
+  const cleanPath = extractCameraPath(cameraPathInput);
   const targetUrl = `${apiBaseUrl}/1/account/recordings?cameraPath=${encodeURIComponent(cleanPath)}&startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&includeNeighbors=true`;
 
   console.log(`[OmniRecord API] Fetching recordings: GET ${targetUrl}`);
