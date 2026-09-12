@@ -133,6 +133,7 @@ export async function fetchPlantData(
     const res = await fetch(targetUrl, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
@@ -291,6 +292,7 @@ export async function fetchCameraRecordings(
       headers: {
         'Accept': 'application/json',
       },
+      credentials: 'include',
       referrerPolicy: 'no-referrer',
       signal: controller.signal,
     });
@@ -318,7 +320,7 @@ export async function fetchCameraRecordings(
     console.warn(`[OmniRecord] Recordings API unreachable (${targetUrl}):`, err);
   }
 
-  // Fallback data if API offline / empty response
+  // Fallback data if API offline / empty response (no fake videoPath to avoid 401 errors)
   const fallbackRecordings: RecordingItem[] = [
     {
       _id: 'rec-fallback-1',
@@ -326,7 +328,6 @@ export async function fetchCameraRecordings(
       startTime: `${dateStr.replace(/\//g, '-')}T04:00:00.000Z`,
       endTime: `${dateStr.replace(/\//g, '-')}T07:30:00.000Z`,
       duration: 12600,
-      videoPath: `/1/recording/rec-fallback-1/video`,
     },
     {
       _id: 'rec-fallback-2',
@@ -334,7 +335,6 @@ export async function fetchCameraRecordings(
       startTime: `${dateStr.replace(/\//g, '-')}T09:00:00.000Z`,
       endTime: `${dateStr.replace(/\//g, '-')}T12:45:00.000Z`,
       duration: 13500,
-      videoPath: `/1/recording/rec-fallback-2/video`,
     },
     {
       _id: 'rec-fallback-3',
@@ -342,7 +342,6 @@ export async function fetchCameraRecordings(
       startTime: `${dateStr.replace(/\//g, '-')}T14:15:00.000Z`,
       endTime: `${dateStr.replace(/\//g, '-')}T18:00:00.000Z`,
       duration: 13500,
-      videoPath: `/1/recording/rec-fallback-3/video`,
     },
   ];
 
