@@ -1,32 +1,45 @@
-# React + TypeScript + Vite
+# OmniRecord - Cupola 360° Patrol & Recording Center
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+OmniRecord is a clean, modern, and professional recording dashboard for Cupola 360° panoramic feeds and IP surveillance streams.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
+- **Clean Enterprise VMS Dashboard**: Simple, uncluttered dark theme (`#0B0F19`, slate gray, subtle blue accents).
+- **360° VR WebGL Viewer**: Three.js panorama player with mouse drag look, FOV zoom, auto-rotation, and 3D spatial hotspot nodes.
+- **Interactive 2D Floorplan Minimap**: Blueprint floorplan radar cone that tracks camera orientation in real time.
+- **No Stream Placeholders**: Displays clean offline placeholder frames when live streams are disconnected.
+- **Docker Production Ready**: Multi-stage Dockerfile and Nginx SPA containerization.
+- **Automated CI/CD**: GitHub Actions workflow auto-builds and deploys to your remote server on every push to `main`.
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Quick Start (Docker)
 
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+To launch locally using Docker Compose:
+```bash
+docker compose up -d
 ```
+Access in your browser at:
+`http://localhost:8877/`
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+---
+
+## Automated Deployment via GitHub Actions
+
+Every push to the `main` branch automatically triggers the `.github/workflows/deploy.yml` workflow:
+
+1. **Build Verification**: Runs Node 20 `npm run build` to ensure zero compilation or type errors.
+2. **Remote SSH Deployment**: Connects to your remote server, pulls the latest `main` commit, and rebuilds the Docker container via `docker compose up -d --build`.
+
+### Required GitHub Repository Secrets
+
+Configure the following secrets under **Settings > Secrets and variables > Actions**:
+
+| Secret Name | Description | Example |
+| :--- | :--- | :--- |
+| `REMOTE_HOST` | Remote server IP or domain | `10.10.12.50` or `my-server.com` |
+| `REMOTE_USER` | SSH username on remote PC | `ubuntu` or `dts-sachin` |
+| `REMOTE_SSH_KEY` | Private SSH Key for authentication | `-----BEGIN OPENSSH PRIVATE KEY-----...` |
+| `REMOTE_TARGET` | Target directory on remote PC | `~/OmniRecord` |
+| `REMOTE_PORT` | *(Optional)* SSH port (default: 22) | `22` |
