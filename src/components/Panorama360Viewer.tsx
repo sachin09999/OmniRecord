@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import type { Camera, CameraIcon, RecordingItem, Neighbors } from '../types/camera';
-import { fetchCameraRecordings } from '../services/apiService';
+import { fetchCameraRecordings, resolveApiUrl } from '../services/apiService';
 import { FloorplanMinimap } from './FloorplanMinimap';
 import { PlaybackTimeline } from './PlaybackTimeline';
 import {
@@ -79,7 +79,7 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
   useEffect(() => {
     if (!activeRecording || (!activeRecording.videoPath && !activeRecording.videoUrl)) return;
 
-    const fullVideoUrl = activeRecording.videoUrl || `${apiBaseUrl}${activeRecording.videoPath}`;
+    const fullVideoUrl = activeRecording.videoUrl || resolveApiUrl(apiBaseUrl, activeRecording.videoPath!);
     console.log(`[OmniRecord Stream] Playing recording video stream: ${fullVideoUrl}`);
 
     const video = document.createElement('video');

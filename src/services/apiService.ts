@@ -120,11 +120,25 @@ const MOCK_CAMERAS_RAW: Partial<Camera & { locationName: string }>[] = [
   },
 ];
 
+export function resolveApiUrl(baseUrl: string, path: string): string {
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+
+  if (typeof window !== 'undefined') {
+    const isCrossOrigin10 = baseUrl.includes('10.10.12.50:3000') && !window.location.host.includes('10.10.12.50:3000');
+    if (isCrossOrigin10 || baseUrl === '' || baseUrl === '/') {
+      return cleanPath;
+    }
+  }
+
+  const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+  return `${cleanBase}${cleanPath}`;
+}
+
 export async function fetchPlantData(
   apiBaseUrl: string = DEFAULT_API_BASE,
   plantId: string = DEFAULT_PLANT_ID
 ): Promise<PlantData> {
-  const targetUrl = `${apiBaseUrl}/2/account/plant/${plantId}/?videoToken=true`;
+  const targetUrl = resolveApiUrl(apiBaseUrl, `/2/account/plant/${plantId}/?videoToken=true`);
 
   try {
     const controller = new AbortController();
@@ -279,7 +293,10 @@ export async function fetchCameraRecordings(
     : calculateTimeRange(dateStr);
 
   const cleanPath = extractCameraPath(cameraPathInput);
-  const targetUrl = `${apiBaseUrl}/1/account/recordings?cameraPath=${encodeURIComponent(cleanPath)}&startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&includeNeighbors=true`;
+  const targetUrl = resolveApiUrl(
+    apiBaseUrl,
+    `/1/account/recordings?cameraPath=${encodeURIComponent(cleanPath)}&startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&includeNeighbors=true`
+  );
 
   console.log(`[OmniRecord API] Fetching recordings: GET ${targetUrl}`);
 
