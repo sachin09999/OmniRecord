@@ -1,12 +1,11 @@
 import React from 'react';
 import type { Camera } from '../types/camera';
 import {
-  Eye,
+  MapPin,
+  ArrowRight,
   VideoOff,
   RotateCw,
-  Video,
-  FileText,
-  Camera as CameraIcon
+  FileText
 } from 'lucide-react';
 
 interface RecordingGridProps {
@@ -15,22 +14,23 @@ interface RecordingGridProps {
   currentDate: string;
   viewMode: 'grid' | 'list' | 'map';
   onAddStickyNote: (cam: Camera) => void;
+  selectedSite: string;
 }
 
 export const RecordingGrid: React.FC<RecordingGridProps> = ({
   cameras,
   onSelectCamera,
-  currentDate,
   viewMode,
   onAddStickyNote,
+  selectedSite,
 }) => {
   if (cameras.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-16 text-center bg-slate-900/40 rounded-xl border border-slate-800 my-8">
-        <VideoOff className="w-8 h-8 text-slate-500 mb-2" />
-        <h3 className="text-sm font-semibold text-slate-300">No Cameras Found</h3>
-        <p className="text-xs text-slate-500 max-w-xs mt-1">
-          No recording feeds match your current filter ({currentDate}).
+      <div className="flex flex-col items-center justify-center p-16 text-center bg-[#111927] rounded-2xl border border-[#1E2B45] my-8">
+        <VideoOff className="w-10 h-10 text-slate-500 mb-3" />
+        <h3 className="text-base font-semibold text-slate-200">No Cameras Found</h3>
+        <p className="text-xs text-slate-400 max-w-xs mt-1">
+          No 360° camera feeds match your search criteria.
         </p>
       </div>
     );
@@ -38,58 +38,56 @@ export const RecordingGrid: React.FC<RecordingGridProps> = ({
 
   if (viewMode === 'list') {
     return (
-      <div className="space-y-2 py-3">
-        <div className="px-4 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between border-b border-slate-800">
-          <span>Camera Name</span>
-          <span>Protocol / Relay</span>
+      <div className="space-y-3 py-2">
+        <div className="px-5 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between border-b border-[#1E2B45]">
+          <span>Camera Name & Location</span>
+          <span>Relay URI</span>
           <span>Rotation</span>
-          <span>Actions</span>
+          <span>Action</span>
         </div>
 
         {cameras.map((cam) => (
           <div
             key={cam._id}
-            className="bg-slate-900/60 hover:bg-slate-800/80 px-4 py-3 rounded-lg flex items-center justify-between gap-4 border border-slate-800/80 transition"
+            className="mockup-card p-4 flex items-center justify-between gap-4 border border-[#1E2B45] hover:border-blue-500 transition"
           >
             <div className="flex items-center gap-3">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+              <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
               <div>
-                <h4 className="text-xs font-semibold text-slate-100 flex items-center gap-2">
+                <h4 className="text-sm font-bold text-slate-100 flex items-center gap-2">
                   {cam.name}
-                  <span className="text-[10px] font-normal text-slate-400">
-                    ({cam.type === '360' ? '360° Patrol' : 'RTSP Feed'})
-                  </span>
                 </h4>
-                <p className="text-[11px] text-slate-500 font-mono">
-                  Path: {cam.path || cam.relayUri}
+                <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                  <MapPin className="w-3.5 h-3.5 text-blue-400" />
+                  <span>{cam.uri || cam.name.split('_')[0]}</span>
                 </p>
               </div>
             </div>
 
-            <div className="text-xs font-mono text-slate-300 bg-slate-950 px-2.5 py-1 rounded border border-slate-800">
+            <div className="text-xs font-mono font-semibold text-slate-300 bg-[#0B132B] px-3 py-1.5 rounded-lg border border-[#1E2B45]">
               {cam.relayUri}
             </div>
 
             <div className="text-xs text-slate-400 flex items-center gap-1.5">
               <RotateCw className="w-3.5 h-3.5 text-slate-400" />
-              <span>{cam.rotateSpeed}x ({cam.basePosition}°)</span>
+              <span>Speed: {cam.rotateSpeed}x ({cam.basePosition}°)</span>
             </div>
 
             <div className="flex items-center gap-2">
               <button
                 onClick={() => onSelectCamera(cam)}
-                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs rounded-md transition flex items-center gap-1.5"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-600/30 transition flex items-center gap-1.5"
               >
-                <Eye className="w-3.5 h-3.5" />
                 <span>View 360°</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
 
               <button
                 onClick={() => onAddStickyNote(cam)}
                 title="Add Note"
-                className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 rounded-md transition border border-slate-700/60"
+                className="p-2 bg-[#1E2B45] hover:bg-slate-700 text-slate-300 rounded-xl transition"
               >
-                <FileText className="w-3.5 h-3.5" />
+                <FileText className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -99,80 +97,81 @@ export const RecordingGrid: React.FC<RecordingGridProps> = ({
   }
 
   return (
-    <div className="py-2">
-      {/* Clean Grid of Camera Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    <div className="py-2 space-y-6">
+      {/* Page Header Section matching Mockup Image 1:1 */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <div>
+          <h2 className="text-2xl font-black text-white tracking-tight">Cameras</h2>
+          <p className="text-xs text-slate-400 font-medium mt-1">
+            Live feeds from all 360° cameras at {selectedSite}
+          </p>
+        </div>
+
+        {/* Right Status matching Mockup: ● 8 Online / All systems operational */}
+        <div className="text-right">
+          <div className="flex items-center gap-2 justify-end">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="text-sm font-extrabold text-slate-100">{cameras.length} Online</span>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-0.5">All systems operational</p>
+        </div>
+      </div>
+
+      {/* 4x2 Camera Card Grid matching Mockup Image 1:1 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {cameras.map((cam) => {
-          const hasStreamImage = Boolean(cam.thumbnailUrl || cam.panoramaUrl);
+          const locationText = cam.uri || cam.name.split('_')[0];
 
           return (
             <div
               key={cam._id}
               onClick={() => onSelectCamera(cam)}
-              className="group bg-slate-900/70 hover:bg-slate-800/90 rounded-xl overflow-hidden cursor-pointer border border-slate-800 transition-all duration-200 shadow-sm"
+              className="mockup-card mockup-card-hover p-4 flex flex-col justify-between cursor-pointer group"
             >
-              {/* Camera Stream Frame */}
-              <div className="relative aspect-video bg-slate-950 overflow-hidden flex flex-col items-center justify-center border-b border-slate-800">
-                {hasStreamImage ? (
-                  <img
-                    src={cam.thumbnailUrl || cam.panoramaUrl}
-                    alt={cam.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                ) : (
-                  /* Clean Minimalist "No Live Stream" Placeholder */
-                  <div className="flex flex-col items-center justify-center p-4 text-center">
-                    <div className="w-9 h-9 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500 mb-2">
-                      {cam.type === '360' ? (
-                        <CameraIcon className="w-4 h-4 text-slate-400" />
-                      ) : (
-                        <Video className="w-4 h-4 text-slate-400" />
-                      )}
-                    </div>
-                    <span className="text-[11px] font-medium text-slate-400">No Stream Connected</span>
-                    <span className="text-[10px] text-slate-500 font-mono mt-0.5">{cam.relayUri}</span>
-                  </div>
-                )}
+              {/* Card Top Header: Camera Title + LIVE Indicator */}
+              <div className="flex items-center justify-between mb-3 px-1">
+                <h3 className="text-xs font-bold text-slate-100 truncate max-w-[170px]" title={cam.name}>
+                  {cam.name}
+                </h3>
 
-                {/* Subtle Type Tag */}
-                <div className="absolute top-2 left-2">
-                  <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-950/80 text-slate-300 border border-slate-800">
-                    {cam.type === '360' ? '360° Patrol' : 'RTSP'}
-                  </span>
-                </div>
-
-                {/* Status Dot */}
-                <div className="absolute top-2 right-2 flex items-center gap-1 bg-slate-950/80 px-2 py-0.5 rounded border border-slate-800">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                  <span className="text-[10px] text-slate-300 font-medium">Live</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                  <span className="text-[10px] font-black text-emerald-400 uppercase tracking-wide">LIVE</span>
                 </div>
               </div>
 
-              {/* Card Footer */}
-              <div className="p-3 bg-slate-900/80 flex items-center justify-between">
-                <div>
-                  <h4 className="text-xs font-semibold text-slate-100 truncate max-w-[140px]">{cam.name}</h4>
-                  <p className="text-[11px] font-mono text-slate-400 mt-0.5">{cam.relayUri}</p>
+              {/* Card Image Frame matching Mockup Image */}
+              <div className="relative aspect-video rounded-xl overflow-hidden bg-[#0B132B] mb-4 border border-[#1E2B45]/60 shadow-inner">
+                <img
+                  src={cam.thumbnailUrl || cam.panoramaUrl}
+                  alt={cam.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+
+                {/* Subtle dark gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent"></div>
+              </div>
+
+              {/* Card Footer Bar matching Mockup Image 1:1 */}
+              <div className="flex items-center justify-between gap-2 pt-1 border-t border-[#1E2B45]/50">
+                {/* Left: Location Pin + Location Name */}
+                <div className="flex items-center gap-1.5 text-xs text-slate-300 min-w-0">
+                  <MapPin className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                  <span className="truncate font-medium text-[11px]" title={locationText}>{locationText}</span>
                 </div>
 
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAddStickyNote(cam);
-                    }}
-                    title="Add Note"
-                    className="p-1 text-slate-400 hover:text-slate-200 transition"
-                  >
-                    <FileText className="w-3.5 h-3.5" />
-                  </button>
+                {/* Right: Relay tag + View 360° Royal Blue Button */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[10px] font-mono text-slate-300 bg-[#0B132B] px-2 py-1 rounded-md border border-[#1E2B45]">
+                    {cam.relayUri}
+                  </span>
 
                   <button
                     onClick={() => onSelectCamera(cam)}
-                    className="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs rounded transition flex items-center gap-1"
+                    className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-600/30 transition group-hover:bg-blue-500"
                   >
-                    <Eye className="w-3 h-3" />
-                    <span>360°</span>
+                    <span>View 360°</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>

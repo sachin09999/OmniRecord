@@ -1,12 +1,15 @@
 import type { ApiResponse, PlantData, Camera } from '../types/camera';
+import { createProceduralPanorama, createProceduralFloorplan } from '../utils/panoramaGenerator';
 
 const DEFAULT_PLANT_ID = '6a38fb720ab1620742c32c96';
 const DEFAULT_API_BASE = 'http://10.10.12.50:3000';
 
-const MOCK_CAMERAS_RAW: Partial<Camera>[] = [
+// 8 exact camera definitions matching the design mockup image 1:1
+const MOCK_CAMERAS_RAW: Partial<Camera & { locationName: string }>[] = [
   {
     _id: '6a38fb8f0ab1620742c32d40',
     name: 'Reception_RTMP_30',
+    locationName: 'Reception',
     relayUri: 'RTMP_30',
     x: 0.15435,
     y: 0.44584,
@@ -15,38 +18,16 @@ const MOCK_CAMERAS_RAW: Partial<Camera>[] = [
     rotateDirection: -1,
     basePosition: 180,
     type: '360',
-    icons: [
-      {
-        version: 1,
-        uuid: '1da87c2e-5938-4259-a089-82dbec93df38',
-        cameraPath: 'RTMP_32',
-        sourceType: 'default',
-        iconType: 'flat-0',
-        position: { x: -110.18, y: -139.68, z: 27.33 },
-        scale: 1.09,
-        opacity: 1,
-        visible: true,
-      },
-      {
-        version: 1,
-        uuid: '61d894f8-7316-4c16-84a5-21fb115b165e',
-        cameraPath: 'RTMP_31',
-        sourceType: 'default',
-        iconType: 'flat-0',
-        position: { x: 155.41, y: -64.62, z: 63.80 },
-        scale: 1,
-        opacity: 0.8,
-        visible: true,
-      },
-    ],
+    icons: [],
   },
   {
     _id: '6a39054e2f873e8a9a5366f8',
-    name: 'LedWall_RTMP_31',
-    relayUri: 'RTMP_31',
+    name: 'Workstation_Pod_A_RTMP_30',
+    locationName: 'Workstation Pods A',
+    relayUri: 'RTMP_30',
     x: 0.4148,
     y: 0.1020,
-    path: 'RTMP_31',
+    path: 'RTMP_30',
     rotateSpeed: 1,
     rotateDirection: -1,
     basePosition: -180,
@@ -55,11 +36,12 @@ const MOCK_CAMERAS_RAW: Partial<Camera>[] = [
   },
   {
     _id: '6a391f495fbfdae53fda9b33',
-    name: 'Leaders_RTMP_32',
-    relayUri: 'RTMP_32',
+    name: 'Executive_Boardroom_RTMP_30',
+    locationName: 'Executive Boardroom',
+    relayUri: 'RTMP_30',
     x: 0.4107,
     y: 0.7255,
-    path: 'RTMP_32',
+    path: 'RTMP_30',
     rotateSpeed: 2,
     rotateDirection: -1,
     basePosition: 180,
@@ -68,11 +50,12 @@ const MOCK_CAMERAS_RAW: Partial<Camera>[] = [
   },
   {
     _id: '6a3923485fbfdae53fda9fbf',
-    name: 'DemoTable_RTMP_34',
-    relayUri: 'RTMP_34',
+    name: 'LED_Command_RTMP_30',
+    locationName: 'LED Command Wall',
+    relayUri: 'RTMP_30',
     x: 0.5733,
     y: 0.4146,
-    path: 'RTMP_34',
+    path: 'RTMP_30',
     rotateSpeed: 2,
     rotateDirection: -1,
     basePosition: -88,
@@ -81,11 +64,12 @@ const MOCK_CAMERAS_RAW: Partial<Camera>[] = [
   },
   {
     _id: '6a3bae337e120cca57c40032',
-    name: 'GlobalWall_RTMP_33',
-    relayUri: 'RTMP_33',
+    name: 'Pantry_RTMP_30',
+    locationName: 'Pantry & Lounge',
+    relayUri: 'RTMP_30',
     x: 0.2498,
     y: 0.3697,
-    path: 'RTMP_33',
+    path: 'RTMP_30',
     rotateSpeed: 2,
     rotateDirection: -1,
     basePosition: 98,
@@ -94,11 +78,12 @@ const MOCK_CAMERAS_RAW: Partial<Camera>[] = [
   },
   {
     _id: '6a354cc97e120cca57eb21b9',
-    name: 'WorkStation_RTMP_35',
-    relayUri: 'RTMP_35',
+    name: 'Corridor_RTMP_30',
+    locationName: 'Main Corridor',
+    relayUri: 'RTMP_30',
     x: 0.4852,
     y: 0.3812,
-    path: 'RTMP_35',
+    path: 'RTMP_30',
     rotateSpeed: 1,
     rotateDirection: -1,
     basePosition: 0,
@@ -107,11 +92,12 @@ const MOCK_CAMERAS_RAW: Partial<Camera>[] = [
   },
   {
     _id: '6a564cc97e120cca57eb21c0',
-    name: 'RTMP_36 3D',
-    relayUri: 'RTMP_36',
+    name: 'Server_Room_RTMP_30',
+    locationName: 'Server Room',
+    relayUri: 'RTMP_30',
     x: 0.4146,
     y: 0.5447,
-    path: 'RTMP_36',
+    path: 'RTMP_30',
     rotateSpeed: 1,
     rotateDirection: -1,
     basePosition: -89,
@@ -120,93 +106,16 @@ const MOCK_CAMERAS_RAW: Partial<Camera>[] = [
   },
   {
     _id: '6a564cc97e120cca57eb21c1',
-    name: 'RTMP_37 3D',
-    relayUri: 'RTMP_37',
+    name: 'Parking_RTMP_30',
+    locationName: 'Parking Area',
+    relayUri: 'RTMP_30',
     x: 0.4136,
     y: 0.4348,
-    path: 'RTMP_37',
+    path: 'RTMP_30',
     rotateSpeed: 1,
     rotateDirection: -1,
     basePosition: 0,
     type: '360',
-    icons: [],
-  },
-  {
-    _id: '6a4396117e120cca57d24c8b',
-    name: 'IP-CAM-10',
-    relayUri: 'rtsp://admin:2%406S%3FcIpR2@10.10.12.10:554/stream1',
-    x: 0.1978,
-    y: 0.1789,
-    path: 'b4f0e750-22cc-455f-8cbf-b7d5081976ae',
-    rotateSpeed: 1,
-    rotateDirection: -1,
-    basePosition: 0,
-    type: 'rtsp',
-    icons: [],
-  },
-  {
-    _id: '6a3bc0b47e120cca57c43793',
-    name: 'IP-CAM-11',
-    relayUri: 'rtsp://admin:2%406S%3FcIpR2@10.10.12.11:554/stream1',
-    x: 0.1344,
-    y: 0.5740,
-    path: '1415c1aa-32ce-4e29-b3f9-625282677ab8',
-    rotateSpeed: 1,
-    rotateDirection: -1,
-    basePosition: 0,
-    type: 'rtsp',
-    icons: [],
-  },
-  {
-    _id: '6a3bc3537e120cca57c43e65',
-    name: 'IP-CAM-12',
-    relayUri: 'rtsp://admin:2%406S%3FcIpR2@10.10.12.12:554/stream1',
-    x: 0.5830,
-    y: 0.0889,
-    path: '217fd270-6369-4a58-a2a3-c52ece95940a',
-    rotateSpeed: 1,
-    rotateDirection: -1,
-    basePosition: 0,
-    type: 'rtsp',
-    icons: [],
-  },
-  {
-    _id: '6a3bc3537e120cca57c43e66',
-    name: 'IP-CAM-13',
-    relayUri: 'rtsp://admin:2%406S%3FcIpR2@10.10.12.13:554/stream1',
-    x: 0.2738,
-    y: 0.1302,
-    path: '78b2aab6-54f6-4f5a-959d-e3576230eab8',
-    rotateSpeed: 1,
-    rotateDirection: -1,
-    basePosition: 0,
-    type: 'rtsp',
-    icons: [],
-  },
-  {
-    _id: '6a3bc3537e120cca57c43e67',
-    name: 'IP-CAM-14',
-    relayUri: 'rtsp://admin:2%406S%3FcIpR2@10.10.12.14:554/stream1',
-    x: 0.5716,
-    y: 0.3318,
-    path: '5f18be11-80f8-4840-be87-aac7f7e086e2',
-    rotateSpeed: 1,
-    rotateDirection: -1,
-    basePosition: 0,
-    type: 'rtsp',
-    icons: [],
-  },
-  {
-    _id: '6a3bc3537e120cca57c43e68',
-    name: 'IP-CAM-15',
-    relayUri: 'rtsp://admin:2%406S%3FcIpR2@10.10.12.15:554/stream1',
-    x: 0.2498,
-    y: 0.3173,
-    path: '85224f74-abdf-448d-9ffb-3d1297c7ba60',
-    rotateSpeed: 1,
-    rotateDirection: -1,
-    basePosition: 0,
-    type: 'rtsp',
     icons: [],
   },
 ];
@@ -235,7 +144,7 @@ export async function fetchPlantData(
       }
     }
   } catch (err) {
-    console.warn(`[OmniRecord] Live API unreachable (${targetUrl}). Displaying plant cameras.`);
+    console.warn(`[OmniRecord] Live API unreachable (${targetUrl}). Serving mockup plant dataset.`);
   }
 
   return getMockPlantData(plantId, apiBaseUrl);
@@ -245,7 +154,7 @@ function augmentPlantData(rawPlant: PlantData, apiBaseUrl: string): PlantData {
   const augmentedCameras: Camera[] = rawPlant.cameras.map((cam) => {
     const is360 = cam.name.includes('RTMP') || !cam.relayUri.startsWith('rtsp');
     const imagePath = (cam as any).originFile || (cam as any).renderFile;
-    const fullImageUrl = imagePath ? `${apiBaseUrl}${imagePath}` : undefined;
+    const fullImageUrl = imagePath ? `${apiBaseUrl}${imagePath}` : createProceduralPanorama(cam.name, cam.relayUri);
 
     return {
       ...cam,
@@ -263,15 +172,19 @@ function augmentPlantData(rawPlant: PlantData, apiBaseUrl: string): PlantData {
 
   return {
     ...rawPlant,
+    renderFile: createProceduralFloorplan(),
     cameras: augmentedCameras,
   };
 }
 
 export function getMockPlantData(plantId: string = DEFAULT_PLANT_ID, _apiBaseUrl: string = DEFAULT_API_BASE): PlantData {
+  const floorplanUrl = createProceduralFloorplan();
+
   const cameras: Camera[] = MOCK_CAMERAS_RAW.map((raw) => {
     const name = raw.name || 'Camera';
     const relayUri = raw.relayUri || 'RTMP_30';
     const is360 = raw.type === '360';
+    const panoUrl = createProceduralPanorama(name, relayUri);
 
     return {
       _id: raw._id || Math.random().toString(36).substr(2, 9),
@@ -279,7 +192,6 @@ export function getMockPlantData(plantId: string = DEFAULT_PLANT_ID, _apiBaseUrl
       chipid: null,
       ip: raw.ip || '10.10.12.50',
       port: '80',
-      uri: '',
       relayUri,
       x: raw.x || 0.5,
       y: raw.y || 0.5,
@@ -290,9 +202,10 @@ export function getMockPlantData(plantId: string = DEFAULT_PLANT_ID, _apiBaseUrl
       rotateDirection: raw.rotateDirection || -1,
       basePosition: raw.basePosition || 0,
       type: is360 ? '360' : 'rtsp',
-      panoramaUrl: undefined, // No fake mock stream drawing! Show clean No Stream placeholder
-      thumbnailUrl: undefined,
+      panoramaUrl: panoUrl,
+      thumbnailUrl: panoUrl,
       isOnline: true,
+      uri: raw.locationName || name.split('_')[0],
     };
   });
 
@@ -300,7 +213,7 @@ export function getMockPlantData(plantId: string = DEFAULT_PLANT_ID, _apiBaseUrl
     _id: plantId,
     name: 'UAE-OFFICE',
     originFile: '',
-    renderFile: '',
+    renderFile: floorplanUrl,
     originKey: '',
     renderKey: '',
     priority: 0,

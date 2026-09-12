@@ -191,6 +191,7 @@ export function App() {
             cameras={filteredCameras}
             onSelectCamera={(cam) => setActiveCamera(cam)}
             currentDate={currentDate}
+            selectedSite={selectedSite}
             viewMode={viewMode}
             onAddStickyNote={(cam) => {
               setActiveCamera(cam);
