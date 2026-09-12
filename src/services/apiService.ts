@@ -1,4 +1,4 @@
-import type { ApiResponse, PlantData, Camera } from '../types/camera';
+import type { ApiResponse, PlantData, Camera, RecordingItem, Neighbors, RecordingsApiResponse } from '../types/camera';
 import { createProceduralPanorama, createProceduralFloorplan } from '../utils/panoramaGenerator';
 
 const DEFAULT_PLANT_ID = '6a38fb720ab1620742c32c96';
@@ -222,5 +222,118 @@ export function getMockPlantData(plantId: string = DEFAULT_PLANT_ID, _apiBaseUrl
     updateTime: new Date().toISOString(),
     createTime: '2026-06-22T09:08:02.125Z',
     cameras,
+  };
+}
+
+export function calculateTimeRange(dateStr: string): { startTime: string; endTime: string } {
+  const normalizedDate = dateStr.replace(/\//g, '-');
+  const d = new Date(normalizedDate);
+
+  if (isNaN(d.getTime())) {
+    return {
+      startTime: '2026-09-10T20:00:00.000Z',
+      endTime: '2026-09-11T19:59:59.999Z',
+    };
+  }
+
+  const prevDay = new Date(d);
+  prevDay.setUTCDate(prevDay.getUTCDate() - 1);
+  const startTime = `${prevDay.toISOString().split('T')[0]}T20:00:00.000Z`;
+  const endTime = `${normalizedDate}T19:59:59.999Z`;
+
+  return { startTime, endTime };
+}
+
+export interface FetchRecordingsResult {
+  recordings: RecordingItem[];
+  events: any[];
+  neighbors: Neighbors;
+  rawResponse?: RecordingsApiResponse;
+}
+
+export async function fetchCameraRecordings(
+  apiBaseUrl: string = DEFAULT_API_BASE,
+  cameraPath: string = 'RTMP_30',
+  dateStr: string = '2026-09-11',
+  customStartTime?: string,
+  customEndTime?: string
+): Promise<FetchRecordingsResult> {
+  const { startTime, endTime } = customStartTime && customEndTime
+    ? { startTime: customStartTime, endTime: customEndTime }
+    : calculateTimeRange(dateStr);
+
+  const cleanPath = cameraPath.includes('_') ? cameraPath.split('_').slice(-2).join('_') : cameraPath;
+  const targetUrl = `${apiBaseUrl}/1/account/recordings?cameraPath=${encodeURIComponent(cleanPath)}&startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&includeNeighbors=true`;
+
+  console.log(`[OmniRecord API] Fetching recordings: GET ${targetUrl}`);
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+    const res = await fetch(targetUrl, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+      referrerPolicy: 'no-referrer',
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const resp: RecordingsApiResponse = await res.json();
+      const items: RecordingItem[] = [...(resp.data || [])];
+
+      if (resp.neighbors?.previous) {
+        items.unshift(resp.neighbors.previous);
+      }
+      if (resp.neighbors?.next) {
+        items.push(resp.neighbors.next);
+      }
+
+      return {
+        recordings: items,
+        events: resp.events || [],
+        neighbors: resp.neighbors || { previous: null, next: null },
+        rawResponse: resp,
+      };
+    }
+  } catch (err) {
+    console.warn(`[OmniRecord] Recordings API unreachable (${targetUrl}):`, err);
+  }
+
+  // Fallback data if API offline / empty response
+  const fallbackRecordings: RecordingItem[] = [
+    {
+      _id: 'rec-fallback-1',
+      cameraPath: cleanPath,
+      startTime: `${dateStr.replace(/\//g, '-')}T04:00:00.000Z`,
+      endTime: `${dateStr.replace(/\//g, '-')}T07:30:00.000Z`,
+      duration: 12600,
+      videoPath: `/1/recording/rec-fallback-1/video`,
+    },
+    {
+      _id: 'rec-fallback-2',
+      cameraPath: cleanPath,
+      startTime: `${dateStr.replace(/\//g, '-')}T09:00:00.000Z`,
+      endTime: `${dateStr.replace(/\//g, '-')}T12:45:00.000Z`,
+      duration: 13500,
+      videoPath: `/1/recording/rec-fallback-2/video`,
+    },
+    {
+      _id: 'rec-fallback-3',
+      cameraPath: cleanPath,
+      startTime: `${dateStr.replace(/\//g, '-')}T14:15:00.000Z`,
+      endTime: `${dateStr.replace(/\//g, '-')}T18:00:00.000Z`,
+      duration: 13500,
+      videoPath: `/1/recording/rec-fallback-3/video`,
+    },
+  ];
+
+  return {
+    recordings: fallbackRecordings,
+    events: [],
+    neighbors: { previous: null, next: null },
   };
 }

@@ -211,6 +211,7 @@ export function App() {
           onSelectCamera={(cam) => setActiveCamera(cam)}
           currentDate={currentDate}
           onOpenStickyNotes={() => setIsStickyNotesOpen(true)}
+          apiBaseUrl={apiBaseUrl}
         />
       )}
 

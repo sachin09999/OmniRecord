@@ -78,3 +78,35 @@ export interface StickyNote {
   author: string;
   color: 'yellow' | 'cyan' | 'purple' | 'green';
 }
+
+export interface RecordingItem {
+  _id: string;
+  key?: string;
+  cameraPath?: string;
+  createTime?: string;
+  duration?: number;
+  startTime?: string;
+  endTime?: string;
+  lastSeen?: string;
+  videoUrl?: string;
+  videoPath?: string;
+  thumbnailPath?: string;
+  osdEvents?: any[];
+  scanned?: boolean;
+}
+
+export interface Neighbors {
+  previous: RecordingItem | null;
+  next: RecordingItem | null;
+}
+
+export interface RecordingsApiResponse {
+  success: boolean;
+  errors?: string[];
+  errfor?: Record<string, any>;
+  license?: License;
+  data: RecordingItem[];
+  events?: any[];
+  neighbors?: Neighbors;
+}
+

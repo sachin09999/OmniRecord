@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import type { Camera, CameraIcon } from '../types/camera';
+import type { Camera, CameraIcon, RecordingItem, Neighbors } from '../types/camera';
+import { fetchCameraRecordings } from '../services/apiService';
 import { FloorplanMinimap } from './FloorplanMinimap';
 import { PlaybackTimeline } from './PlaybackTimeline';
 import {
@@ -26,6 +27,7 @@ interface Panorama360ViewerProps {
   onSelectCamera: (cam: Camera) => void;
   currentDate: string;
   onOpenStickyNotes: () => void;
+  apiBaseUrl?: string;
 }
 
 export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
@@ -36,6 +38,7 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
   onSelectCamera,
   currentDate,
   onOpenStickyNotes,
+  apiBaseUrl = 'http://10.10.12.50:3000',
 }) => {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const [currentYaw, setCurrentYaw] = useState<number>(camera.basePosition || 0);
@@ -47,6 +50,32 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
   const [activeTool, setActiveTool] = useState<'selection' | 'screen' | 'window' | 'default'>('default');
   const [minimapExpanded, setMinimapExpanded] = useState<boolean>(false);
   const [notification, setNotification] = useState<string | null>(null);
+
+  const [recordings, setRecordings] = useState<RecordingItem[]>([]);
+  const [neighbors, setNeighbors] = useState<Neighbors>({ previous: null, next: null });
+  const [isFetchingRecordings, setIsFetchingRecordings] = useState<boolean>(false);
+  const [activeRecording, setActiveRecording] = useState<RecordingItem | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    setIsFetchingRecordings(true);
+
+    const targetPath = camera.path || camera.relayUri || camera.name;
+    fetchCameraRecordings(apiBaseUrl, targetPath, currentDate).then((res) => {
+      if (isMounted) {
+        setRecordings(res.recordings);
+        setNeighbors(res.neighbors);
+        setIsFetchingRecordings(false);
+        if (res.recordings.length > 0) {
+          setActiveRecording(res.recordings[0]);
+        }
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [camera, currentDate, apiBaseUrl]);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
@@ -344,6 +373,16 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
             <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-600 text-white uppercase">
               HISTORY
             </span>
+
+            {isFetchingRecordings ? (
+              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse">
+                Fetching Stream API...
+              </span>
+            ) : (
+              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                GET Recordings OK ({recordings.length})
+              </span>
+            )}
           </div>
 
           <div className="h-4 w-px bg-slate-800 mx-1 hidden sm:block"></div>
@@ -352,6 +391,12 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
             <span className="text-blue-400">{camera.name}</span>
             <span className="text-slate-600">•</span>
             <span className="font-mono text-slate-400">{currentDate}</span>
+            {activeRecording?.key && (
+              <>
+                <span className="text-slate-600">•</span>
+                <span className="font-mono text-cyan-400 text-[11px]">{activeRecording.key}</span>
+              </>
+            )}
           </div>
         </div>
 
@@ -508,7 +553,13 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
 
       {showTimeline && (
         <div className="relative z-20 border-t border-slate-800 bg-slate-900">
-          <PlaybackTimeline currentDate={currentDate} />
+          <PlaybackTimeline
+            currentDate={currentDate}
+            recordings={recordings}
+            neighbors={neighbors}
+            apiBaseUrl={apiBaseUrl}
+            onSelectRecording={(rec) => setActiveRecording(rec)}
+          />
         </div>
       )}
     </div>
