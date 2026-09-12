@@ -1,11 +1,8 @@
 import type { ApiResponse, PlantData, Camera } from '../types/camera';
-import { createProceduralPanorama, createProceduralFloorplan } from '../utils/panoramaGenerator';
 
-// Default configuration from user request
 const DEFAULT_PLANT_ID = '6a38fb720ab1620742c32c96';
 const DEFAULT_API_BASE = 'http://10.10.12.50:3000';
 
-// Raw camera definitions matching exact payload provided by user
 const MOCK_CAMERAS_RAW: Partial<Camera>[] = [
   {
     _id: '6a38fb8f0ab1620742c32d40',
@@ -54,41 +51,7 @@ const MOCK_CAMERAS_RAW: Partial<Camera>[] = [
     rotateDirection: -1,
     basePosition: -180,
     type: '360',
-    icons: [
-      {
-        version: 1,
-        uuid: '3f3062cd-8719-4447-bbd0-cbdf1087de0f',
-        cameraPath: 'RTMP_32',
-        sourceType: 'default',
-        iconType: 'flat-0',
-        position: { x: 14.77, y: -87.45, z: -156.63 },
-        scale: 0.65,
-        opacity: 1,
-        visible: true,
-      },
-      {
-        version: 1,
-        uuid: '3a6c897f-f357-43d0-be12-a7b0e4467b4d',
-        cameraPath: 'RTMP_33',
-        sourceType: 'default',
-        iconType: 'flat-0',
-        position: { x: 106.66, y: -112.33, z: -91.67 },
-        scale: 0.65,
-        opacity: 1,
-        visible: true,
-      },
-      {
-        version: 1,
-        uuid: '523f12d2-9567-4120-aba3-67b8ff796798',
-        cameraPath: 'RTMP_34',
-        sourceType: 'default',
-        iconType: 'flat-0',
-        position: { x: -79.99, y: -119.11, z: -108.69 },
-        scale: 0.65,
-        opacity: 1,
-        visible: true,
-      },
-    ],
+    icons: [],
   },
   {
     _id: '6a391f495fbfdae53fda9b33',
@@ -101,30 +64,7 @@ const MOCK_CAMERAS_RAW: Partial<Camera>[] = [
     rotateDirection: -1,
     basePosition: 180,
     type: '360',
-    icons: [
-      {
-        version: 1,
-        uuid: '668f5507-9c5a-4e8d-b870-3eb9cad489db',
-        cameraPath: 'RTMP_30',
-        sourceType: 'default',
-        iconType: 'flat-0',
-        position: { x: 127.74, y: -115.06, z: 53.31 },
-        scale: 1,
-        opacity: 0.8,
-        visible: true,
-      },
-      {
-        version: 1,
-        uuid: '13567428-b302-4b27-9e69-b3346ad2eb67',
-        cameraPath: 'RTMP_33',
-        sourceType: 'default',
-        iconType: 'flat-0',
-        position: { x: 91.54, y: -90.16, z: 126.05 },
-        scale: 0.94,
-        opacity: 1,
-        visible: true,
-      },
-    ],
+    icons: [],
   },
   {
     _id: '6a3923485fbfdae53fda9fbf',
@@ -137,30 +77,7 @@ const MOCK_CAMERAS_RAW: Partial<Camera>[] = [
     rotateDirection: -1,
     basePosition: -88,
     type: '360',
-    icons: [
-      {
-        version: 1,
-        uuid: 'b4249e60-c4a7-4b90-88a4-cbecdca65035',
-        cameraPath: 'RTMP_31',
-        sourceType: 'default',
-        iconType: 'flat-0',
-        position: { x: -130.0, y: -94.28, z: 81.28 },
-        scale: 0.74,
-        opacity: 1,
-        visible: true,
-      },
-      {
-        version: 1,
-        uuid: '4a9151ea-7a07-4be5-9814-44a0cd816493',
-        cameraPath: 'RTMP_35',
-        sourceType: 'default',
-        iconType: 'flat-0',
-        position: { x: -7.04, y: -83.25, z: 159.43 },
-        scale: 0.75,
-        opacity: 1,
-        visible: true,
-      },
-    ],
+    icons: [],
   },
   {
     _id: '6a3bae337e120cca57c40032',
@@ -173,30 +90,7 @@ const MOCK_CAMERAS_RAW: Partial<Camera>[] = [
     rotateDirection: -1,
     basePosition: 98,
     type: '360',
-    icons: [
-      {
-        version: 1,
-        uuid: '0b19c122-7433-4b1d-8177-ea39554e8565',
-        cameraPath: 'RTMP_32',
-        sourceType: 'default',
-        iconType: 'flat-0',
-        position: { x: -127.8, y: -100.0, z: 77.8 },
-        scale: 0.71,
-        opacity: 1,
-        visible: true,
-      },
-      {
-        version: 1,
-        uuid: '88cf5854-9341-4675-98c3-e64a79a61613',
-        cameraPath: 'RTMP_31',
-        sourceType: 'default',
-        iconType: 'flat-0',
-        position: { x: 124.23, y: -82.51, z: 100.78 },
-        scale: 0.79,
-        opacity: 1,
-        visible: true,
-      },
-    ],
+    icons: [],
   },
   {
     _id: '6a354cc97e120cca57eb21b9',
@@ -209,19 +103,7 @@ const MOCK_CAMERAS_RAW: Partial<Camera>[] = [
     rotateDirection: -1,
     basePosition: 0,
     type: '360',
-    icons: [
-      {
-        version: 1,
-        uuid: '368ab0b2-2035-438e-91b4-32ff58e6a9e0',
-        cameraPath: 'RTMP_34',
-        sourceType: 'default',
-        iconType: 'flat-0',
-        position: { x: 17.97, y: -139.26, z: -112.61 },
-        scale: 0.68,
-        opacity: 1,
-        visible: true,
-      },
-    ],
+    icons: [],
   },
   {
     _id: '6a564cc97e120cca57eb21c0',
@@ -249,7 +131,6 @@ const MOCK_CAMERAS_RAW: Partial<Camera>[] = [
     type: '360',
     icons: [],
   },
-  // RTSP IP Cameras matching prompt
   {
     _id: '6a4396117e120cca57d24c8b',
     name: 'IP-CAM-10',
@@ -350,22 +231,22 @@ export async function fetchPlantData(
     if (res.ok) {
       const data: ApiResponse = await res.json();
       if (data.success && data.data) {
-        return augmentPlantData(data.data);
+        return augmentPlantData(data.data, apiBaseUrl);
       }
     }
   } catch (err) {
-    console.warn(`[OmniRecord] Live API unreachable (${targetUrl}), activating Cupola offline mock engine.`);
+    console.warn(`[OmniRecord] Live API unreachable (${targetUrl}). Displaying plant cameras.`);
   }
 
-  return getMockPlantData(plantId);
+  return getMockPlantData(plantId, apiBaseUrl);
 }
 
-function augmentPlantData(rawPlant: PlantData): PlantData {
-  const floorplanUrl = rawPlant.renderFile || createProceduralFloorplan();
-
+function augmentPlantData(rawPlant: PlantData, apiBaseUrl: string): PlantData {
   const augmentedCameras: Camera[] = rawPlant.cameras.map((cam) => {
     const is360 = cam.name.includes('RTMP') || !cam.relayUri.startsWith('rtsp');
-    const panoUrl = createProceduralPanorama(cam.name, cam.relayUri);
+    const imagePath = (cam as any).originFile || (cam as any).renderFile;
+    const fullImageUrl = imagePath ? `${apiBaseUrl}${imagePath}` : undefined;
+
     return {
       ...cam,
       chipid: cam.chipid || null,
@@ -374,27 +255,23 @@ function augmentPlantData(rawPlant: PlantData): PlantData {
       uri: cam.uri || '',
       vfov: cam.vfov || 0,
       type: is360 ? '360' : 'rtsp',
-      panoramaUrl: panoUrl,
-      thumbnailUrl: panoUrl,
+      panoramaUrl: fullImageUrl,
+      thumbnailUrl: fullImageUrl,
       isOnline: true,
     };
   });
 
   return {
     ...rawPlant,
-    renderFile: floorplanUrl,
     cameras: augmentedCameras,
   };
 }
 
-export function getMockPlantData(plantId: string = DEFAULT_PLANT_ID): PlantData {
-  const floorplanUrl = createProceduralFloorplan();
-
+export function getMockPlantData(plantId: string = DEFAULT_PLANT_ID, _apiBaseUrl: string = DEFAULT_API_BASE): PlantData {
   const cameras: Camera[] = MOCK_CAMERAS_RAW.map((raw) => {
     const name = raw.name || 'Camera';
     const relayUri = raw.relayUri || 'RTMP_30';
     const is360 = raw.type === '360';
-    const panoUrl = createProceduralPanorama(name, relayUri);
 
     return {
       _id: raw._id || Math.random().toString(36).substr(2, 9),
@@ -413,8 +290,8 @@ export function getMockPlantData(plantId: string = DEFAULT_PLANT_ID): PlantData 
       rotateDirection: raw.rotateDirection || -1,
       basePosition: raw.basePosition || 0,
       type: is360 ? '360' : 'rtsp',
-      panoramaUrl: panoUrl,
-      thumbnailUrl: panoUrl,
+      panoramaUrl: undefined, // No fake mock stream drawing! Show clean No Stream placeholder
+      thumbnailUrl: undefined,
       isOnline: true,
     };
   });
@@ -422,10 +299,10 @@ export function getMockPlantData(plantId: string = DEFAULT_PLANT_ID): PlantData 
   return {
     _id: plantId,
     name: 'UAE-OFFICE',
-    originFile: '/static/plant/6a38fb720ab1620742c32c96/origin-1788244152557.jpg',
-    renderFile: floorplanUrl,
-    originKey: '6a38fb720ab1620742c32c96/origin-1788244152557.jpg',
-    renderKey: '6a38fb720ab1620742c32c96/render-1788244152557.png',
+    originFile: '',
+    renderFile: '',
+    originKey: '',
+    renderKey: '',
     priority: 0,
     group: null,
     pinTime: null,
