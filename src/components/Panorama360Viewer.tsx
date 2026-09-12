@@ -77,6 +77,35 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
     };
   }, [camera, currentDate, apiBaseUrl]);
 
+  useEffect(() => {
+    if (!activeRecording || (!activeRecording.videoPath && !activeRecording.videoUrl)) return;
+
+    const fullVideoUrl = activeRecording.videoUrl || `${apiBaseUrl}${activeRecording.videoPath}`;
+    console.log(`[OmniRecord Stream] Playing recording video stream: ${fullVideoUrl}`);
+
+    const video = document.createElement('video');
+    video.src = fullVideoUrl;
+    video.crossOrigin = 'anonymous';
+    video.loop = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.play().catch((err) => console.warn('[OmniRecord] Video playback autoplay blocked:', err));
+
+    const videoTexture = new THREE.VideoTexture(video);
+    videoTexture.colorSpace = THREE.SRGBColorSpace;
+
+    if (sphereMeshRef.current) {
+      (sphereMeshRef.current.material as THREE.MeshBasicMaterial).map = videoTexture;
+      (sphereMeshRef.current.material as THREE.MeshBasicMaterial).needsUpdate = true;
+    }
+
+    return () => {
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+    };
+  }, [activeRecording, apiBaseUrl]);
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
