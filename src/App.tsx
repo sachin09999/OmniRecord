@@ -233,6 +233,11 @@ export function App() {
             setActiveCamera(cam);
             setPageScreen('recordings');
           }}
+          onSelectLiveCamera={(cam) => {
+            setActiveCamera(cam);
+            setSelectedRecording(null);
+            setPageScreen('viewer');
+          }}
           currentDate={currentDate}
           selectedSite={selectedSite}
           viewMode={viewMode}
