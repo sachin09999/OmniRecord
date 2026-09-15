@@ -19,6 +19,7 @@ export function App() {
   const [loading, setLoading] = useState<boolean>(true);
   const [apiBaseUrl, setApiBaseUrl] = useState<string>('http://10.10.12.50:3000');
   const [plantId, setPlantId] = useState<string>('6a38fb720ab1620742c32c96');
+  const [authToken, setAuthToken] = useState<string>('');
   const [isLiveConnected, setIsLiveConnected] = useState<boolean>(false);
 
   const [currentDate, setCurrentDate] = useState<string>('2026/09/12');
@@ -48,7 +49,7 @@ export function App() {
     let isMounted = true;
     setLoading(true);
 
-    fetchPlantData(apiBaseUrl, plantId).then((data) => {
+    fetchPlantData(apiBaseUrl, plantId, authToken).then((data) => {
       if (isMounted) {
         setPlantData(data);
         setLoading(false);
@@ -59,7 +60,7 @@ export function App() {
     return () => {
       isMounted = false;
     };
-  }, [apiBaseUrl, plantId]);
+  }, [apiBaseUrl, plantId, authToken]);
 
   const filteredCameras = useMemo(() => {
     if (!plantData) return [];
@@ -212,6 +213,7 @@ export function App() {
           currentDate={currentDate}
           onOpenStickyNotes={() => setIsStickyNotesOpen(true)}
           apiBaseUrl={apiBaseUrl}
+          authToken={authToken}
         />
       )}
 
@@ -233,9 +235,11 @@ export function App() {
         onClose={() => setIsSettingsOpen(false)}
         apiBaseUrl={apiBaseUrl}
         plantId={plantId}
-        onSave={(url, pid) => {
+        authToken={authToken}
+        onSave={(url, pid, token) => {
           setApiBaseUrl(url);
           setPlantId(pid);
+          setAuthToken(token);
         }}
         isLiveConnected={isLiveConnected}
       />

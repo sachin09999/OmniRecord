@@ -28,6 +28,7 @@ interface Panorama360ViewerProps {
   currentDate: string;
   onOpenStickyNotes: () => void;
   apiBaseUrl?: string;
+  authToken?: string;
 }
 
 export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
@@ -39,6 +40,7 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
   currentDate,
   onOpenStickyNotes,
   apiBaseUrl = 'http://10.10.12.50:3000',
+  authToken = '',
 }) => {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const [currentYaw, setCurrentYaw] = useState<number>(camera.basePosition || 0);
@@ -60,7 +62,7 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
     let isMounted = true;
     setIsFetchingRecordings(true);
 
-    fetchCameraRecordings(apiBaseUrl, camera, currentDate).then((res) => {
+    fetchCameraRecordings(apiBaseUrl, camera, currentDate, undefined, undefined, authToken).then((res) => {
       if (isMounted) {
         setRecordings(res.recordings);
         setNeighbors(res.neighbors);
@@ -74,7 +76,7 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [camera, currentDate, apiBaseUrl]);
+  }, [camera, currentDate, apiBaseUrl, authToken]);
 
   useEffect(() => {
     if (!activeRecording || (!activeRecording.videoPath && !activeRecording.videoUrl)) return;

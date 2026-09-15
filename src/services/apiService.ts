@@ -124,8 +124,11 @@ export function resolveApiUrl(baseUrl: string, path: string): string {
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
 
   if (typeof window !== 'undefined') {
+    const isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const isStandardProxyPath = cleanPath.startsWith('/1/') || cleanPath.startsWith('/2/') || cleanPath.startsWith('/static/');
     const isCrossOrigin10 = baseUrl.includes('10.10.12.50:3000') && !window.location.host.includes('10.10.12.50:3000');
-    if (isCrossOrigin10 || baseUrl === '' || baseUrl === '/') {
+
+    if (isCrossOrigin10 || (isLocalDev && isStandardProxyPath) || baseUrl === '' || baseUrl === '/') {
       return cleanPath;
     }
   }
@@ -134,23 +137,81 @@ export function resolveApiUrl(baseUrl: string, path: string): string {
   return `${cleanBase}${cleanPath}`;
 }
 
+export const DEFAULT_JWT_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NGM4YjNhNTRlZDg0ZTM3NzM1ZDU0ZDYiLCJ1c2VybmFtZSI6ImFkbWluIiwiZW1haWwiOiJhZG1pbkBhc3BlZWQtZm9vLmNvbSIsInJvbGVzIjp7ImFkbWluIjp7Il9pZCI6IjY0YzhiM2E1MDE2ZGUyM2ZiMTI3YjM4YyIsImdyb3VwcyI6WyJyb290Il19LCJhY2NvdW50IjoiNjRjOGIzYTUwMTZkZTIzZmIxMjdiMzkyIn0sImdyb3VwcyI6W10sImlhdCI6MTc4OTQ1MTk5MCwiZXhwIjoxNzkwNzQ3OTkwfQ.rOpYqVkeBnbHSui47pLT6j87dQRPXD9wVSRKYOA1cvE';
+let cachedAuthToken: string = DEFAULT_JWT_TOKEN;
+
+export async function loginToCupola(
+  apiBaseUrl: string = DEFAULT_API_BASE,
+  username: string = 'admin',
+  password: string = 'qwer1234'
+): Promise<string | null> {
+  const targetUrl = resolveApiUrl(apiBaseUrl, '/1/login');
+  try {
+    const res = await fetch(targetUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+      credentials: 'same-origin',
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.data?.token) {
+        cachedAuthToken = data.data.token;
+        console.log('[OmniRecord Auth] Successfully authenticated with Cupola 360 backend!');
+        return data.data.token;
+      }
+    }
+  } catch (err) {
+    console.warn('[OmniRecord Auth] Login request failed:', err);
+  }
+  return null;
+}
+
 export async function fetchPlantData(
   apiBaseUrl: string = DEFAULT_API_BASE,
-  plantId: string = DEFAULT_PLANT_ID
+  plantId: string = DEFAULT_PLANT_ID,
+  authToken: string = ''
 ): Promise<PlantData> {
-  const targetUrl = resolveApiUrl(apiBaseUrl, `/2/account/plant/${plantId}/?videoToken=true`);
+  let activeToken = authToken || cachedAuthToken;
+  let tokenParam = activeToken ? encodeURIComponent(activeToken) : 'true';
+  let targetUrl = resolveApiUrl(apiBaseUrl, `/2/account/plant/${plantId}/?videoToken=${tokenParam}`);
+
+  const getHeaders = (tok: string) => {
+    const h: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (tok) {
+      h['Authorization'] = `Bearer ${tok}`;
+      h['x-access-token'] = tok;
+    }
+    return h;
+  };
 
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 2500);
 
-    const res = await fetch(targetUrl, {
+    let res = await fetch(targetUrl, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
+      headers: getHeaders(activeToken),
+      credentials: 'same-origin',
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
+
+    // If 401 Unauthorized, attempt auto-login
+    if (res.status === 401) {
+      console.log('[OmniRecord Auth] Token expired or 401 returned. Attempting auto-login (/1/login)...');
+      const freshToken = await loginToCupola(apiBaseUrl, 'admin', 'qwer1234');
+      if (freshToken) {
+        activeToken = freshToken;
+        tokenParam = encodeURIComponent(freshToken);
+        targetUrl = resolveApiUrl(apiBaseUrl, `/2/account/plant/${plantId}/?videoToken=${tokenParam}`);
+        res = await fetch(targetUrl, {
+          method: 'GET',
+          headers: getHeaders(activeToken),
+          credentials: 'same-origin',
+        });
+      }
+    }
 
     if (res.ok) {
       const data: ApiResponse = await res.json();
@@ -159,7 +220,41 @@ export async function fetchPlantData(
       }
     }
   } catch (err) {
-    console.warn(`[OmniRecord] Live API unreachable (${targetUrl}). Serving mockup plant dataset.`);
+    console.warn(`[OmniRecord] Live plant API detail request unreachable (${targetUrl}). Checking plants catalog...`);
+  }
+
+  // Fallback: Check public catalog endpoint /2/account/plants/
+  try {
+    const catalogUrl = resolveApiUrl(apiBaseUrl, '/2/account/plants/');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2500);
+
+    const res = await fetch(catalogUrl, {
+      method: 'GET',
+      headers: getHeaders(activeToken),
+      credentials: 'same-origin',
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const catalogData = await res.json();
+      if (catalogData.success && Array.isArray(catalogData.data)) {
+        const found = catalogData.data.find((p: any) => p._id === plantId || p.name === 'UAE-OFFICE') || catalogData.data[0];
+        if (found) {
+          const mock = getMockPlantData(found._id || plantId, apiBaseUrl);
+          if (found.renderFile) {
+            mock.renderFile = resolveApiUrl(apiBaseUrl, found.renderFile);
+          }
+          if (found.name) {
+            mock.name = found.name;
+          }
+          return mock;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[OmniRecord] Catalog API unreachable. Serving mockup dataset.');
   }
 
   return getMockPlantData(plantId, apiBaseUrl);
@@ -286,34 +381,63 @@ export async function fetchCameraRecordings(
   cameraPathInput: string | Partial<Camera> = 'RTMP_30',
   dateStr: string = '2026-09-11',
   customStartTime?: string,
-  customEndTime?: string
+  customEndTime?: string,
+  authToken: string = ''
 ): Promise<FetchRecordingsResult> {
   const { startTime, endTime } = customStartTime && customEndTime
     ? { startTime: customStartTime, endTime: customEndTime }
     : calculateTimeRange(dateStr);
 
   const cleanPath = extractCameraPath(cameraPathInput);
-  const targetUrl = resolveApiUrl(
+  let activeToken = authToken || cachedAuthToken;
+  let tokenParam = activeToken ? `&videoToken=${encodeURIComponent(activeToken)}` : '';
+  let targetUrl = resolveApiUrl(
     apiBaseUrl,
-    `/1/account/recordings?cameraPath=${encodeURIComponent(cleanPath)}&startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&includeNeighbors=true`
+    `/1/account/recordings?cameraPath=${encodeURIComponent(cleanPath)}&startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&includeNeighbors=true${tokenParam}`
   );
 
   console.log(`[OmniRecord API] Fetching recordings: GET ${targetUrl}`);
+
+  const getHeaders = (tok: string) => {
+    const h: Record<string, string> = { 'Accept': 'application/json' };
+    if (tok) {
+      h['Authorization'] = `Bearer ${tok}`;
+      h['x-access-token'] = tok;
+    }
+    return h;
+  };
 
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 4000);
 
-    const res = await fetch(targetUrl, {
+    let res = await fetch(targetUrl, {
       method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      },
-      credentials: 'include',
+      headers: getHeaders(activeToken),
+      credentials: 'same-origin',
       referrerPolicy: 'no-referrer',
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
+
+    if (res.status === 401) {
+      console.log('[OmniRecord Auth] Recordings token expired. Attempting auto-login (/1/login)...');
+      const freshToken = await loginToCupola(apiBaseUrl, 'admin', 'qwer1234');
+      if (freshToken) {
+        activeToken = freshToken;
+        tokenParam = `&videoToken=${encodeURIComponent(freshToken)}`;
+        targetUrl = resolveApiUrl(
+          apiBaseUrl,
+          `/1/account/recordings?cameraPath=${encodeURIComponent(cleanPath)}&startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&includeNeighbors=true${tokenParam}`
+        );
+        res = await fetch(targetUrl, {
+          method: 'GET',
+          headers: getHeaders(activeToken),
+          credentials: 'same-origin',
+          referrerPolicy: 'no-referrer',
+        });
+      }
+    }
 
     if (res.ok) {
       const resp: RecordingsApiResponse = await res.json();

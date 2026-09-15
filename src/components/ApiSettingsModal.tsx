@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { X, Server, CheckCircle2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { X, Server, CheckCircle2, AlertTriangle, RefreshCw, Key, LogIn } from 'lucide-react';
+import { resolveApiUrl, loginToCupola } from '../services/apiService';
 
 interface ApiSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   apiBaseUrl: string;
   plantId: string;
-  onSave: (baseUrl: string, plantId: string) => void;
+  authToken?: string;
+  onSave: (baseUrl: string, plantId: string, authToken: string) => void;
   isLiveConnected?: boolean;
 }
 
@@ -15,10 +17,12 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({
   onClose,
   apiBaseUrl,
   plantId,
+  authToken = '',
   onSave,
 }) => {
   const [url, setUrl] = useState(apiBaseUrl);
   const [pid, setPid] = useState(plantId);
+  const [token, setToken] = useState(authToken);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; msg: string } | null>(null);
 
@@ -28,12 +32,19 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({
     setIsTesting(true);
     setTestResult(null);
 
-    const testUrl = `${url}/2/account/plant/${pid}/?videoToken=true`;
+    const tokenQuery = token.trim() ? encodeURIComponent(token.trim()) : 'true';
+    const testUrl = resolveApiUrl(url, `/2/account/plant/${pid}/?videoToken=${tokenQuery}`);
 
     try {
       const controller = new AbortController();
       const id = setTimeout(() => controller.abort(), 3000);
-      const res = await fetch(testUrl, { signal: controller.signal });
+      const headers: Record<string, string> = { 'Accept': 'application/json' };
+      if (token.trim()) {
+        headers['Authorization'] = `Bearer ${token.trim()}`;
+        headers['x-access-token'] = token.trim();
+      }
+
+      const res = await fetch(testUrl, { method: 'GET', headers, credentials: 'same-origin', signal: controller.signal });
       clearTimeout(id);
 
       if (res.ok) {
@@ -41,7 +52,7 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({
       } else {
         setTestResult({
           success: false,
-          msg: `Server returned status ${res.status}. Falling back to offline engine.`,
+          msg: `Server returned status ${res.status} (${res.statusText || 'Unauthorized'}). Provide valid Auth/Video Token.`,
         });
       }
     } catch (err) {
@@ -54,8 +65,26 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({
     }
   };
 
+  const handleAutoFetchToken = async () => {
+    setIsTesting(true);
+    setTestResult(null);
+    try {
+      const freshToken = await loginToCupola(url, 'admin', 'qwer1234');
+      if (freshToken) {
+        setToken(freshToken);
+        setTestResult({ success: true, msg: 'Successfully fetched and applied new token from Cupola backend!' });
+      } else {
+        setTestResult({ success: false, msg: 'Failed to auto-fetch token. Ensure the backend is reachable and credentials are correct.' });
+      }
+    } catch (e) {
+      setTestResult({ success: false, msg: 'Error fetching token from Cupola backend.' });
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
   const handleSave = () => {
-    onSave(url, pid);
+    onSave(url, pid, token);
     onClose();
   };
 
@@ -99,10 +128,36 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({
             />
           </div>
 
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-bold text-slate-300 flex items-center gap-1">
+                <Key className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Auth / Video Token (Optional)</span>
+              </label>
+              <button
+                type="button"
+                onClick={handleAutoFetchToken}
+                disabled={isTesting}
+                className="text-[10px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition disabled:opacity-50"
+              >
+                <LogIn className="w-3 h-3" />
+                Auto-Login
+              </button>
+            </div>
+            <input
+              type="password"
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              placeholder="Paste Bearer Token / API Key / Session Token"
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-cyan-500"
+            />
+            <p className="text-[10px] text-slate-500 mt-1">Sent via Authorization header and videoToken parameter</p>
+          </div>
+
           <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
             <span className="font-semibold text-slate-400 block mb-1">Constructed Request URL:</span>
             <code className="text-[10px] text-cyan-400 break-all block font-mono">
-              {url}/2/account/plant/{pid}/?videoToken=true
+              {url}/2/account/plant/{pid}/?videoToken={token.trim() ? encodeURIComponent(token.trim()) : 'true'}
             </code>
           </div>
 

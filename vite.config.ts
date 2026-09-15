@@ -17,6 +17,10 @@ export default defineConfig({
         target: 'http://10.10.12.50:3000',
         changeOrigin: true,
       },
+      '/static': {
+        target: 'http://10.10.12.50:3000',
+        changeOrigin: true,
+      },
     },
   },
   preview: {
@@ -28,6 +32,10 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/2': {
+        target: 'http://10.10.12.50:3000',
+        changeOrigin: true,
+      },
+      '/static': {
         target: 'http://10.10.12.50:3000',
         changeOrigin: true,
       },
