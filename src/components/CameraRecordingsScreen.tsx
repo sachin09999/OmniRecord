@@ -10,7 +10,6 @@ import {
   Film,
   RefreshCw,
   AlertCircle,
-  Layers,
   LayoutGrid,
   List,
   ArrowUpDown,
@@ -48,7 +47,7 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
   const [recordings, setRecordings] = useState<RecordingItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [viewType, setViewType] = useState<'grid' | 'grouped' | 'list'>('grid');
+  const [viewType, setViewType] = useState<'grid' | 'list'>('grid');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc'); // Default 00:00 on top!
 
   const activeCameraPath = extractCameraPath(camera);
@@ -85,21 +84,18 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
 
   const formattedInputDate = selectedDate.split('/').join('-');
 
-  // Sorted list of recordings (Ascending: 00:00 at the top by default)
-  const sortedRecordings = useMemo(() => {
-    const list = [...recordings];
-    list.sort((a, b) => {
-      const timeA = a.startTime ? new Date(a.startTime).getTime() : 0;
-      const timeB = b.startTime ? new Date(b.startTime).getTime() : 0;
-      return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
-    });
-    return list;
-  }, [recordings, sortOrder]);
-
-  // Group 1-minute recordings into continuous Hour Blocks (Starting from 00:00 on top)
+  // Group 1-minute raw recording segments into Continuous Hourly Stream Blocks
   const hourGroups = useMemo(() => {
     const map = new Map<number, RecordingItem[]>();
-    sortedRecordings.forEach((rec) => {
+    
+    // Sort raw recordings chronologically first
+    const sorted = [...recordings].sort((a, b) => {
+      const timeA = a.startTime ? new Date(a.startTime).getTime() : 0;
+      const timeB = b.startTime ? new Date(b.startTime).getTime() : 0;
+      return timeA - timeB;
+    });
+
+    sorted.forEach((rec) => {
       if (!rec.startTime) return;
       try {
         const d = new Date(rec.startTime);
@@ -124,10 +120,10 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
       });
     });
 
-    // Ascending: 00:00 on top!
+    // Ascending by default: 00:00 on top!
     groups.sort((a, b) => (sortOrder === 'asc' ? a.hourNum - b.hourNum : b.hourNum - a.hourNum));
     return groups;
-  }, [sortedRecordings, sortOrder]);
+  }, [recordings, sortOrder]);
 
   // Helper function to resolve video media source URL
   const getVideoMediaUrl = (rec?: RecordingItem): string => {
@@ -189,7 +185,7 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
             <div className="flex items-center gap-1.5">
               <Film className="w-4 h-4 text-indigo-600" />
               <span className="font-semibold text-gray-900">
-                {recordings.length > 0 ? `${recordings.length} Clips Available` : 'No Recordings'}
+                {hourGroups.length > 0 ? `${hourGroups.length} Continuous Hours Recorded` : 'No Recordings'}
               </span>
             </div>
 
@@ -197,7 +193,7 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
 
             <div className="flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-indigo-600" />
-              <span className="font-semibold text-gray-900">{hourGroups.length} Hours Active</span>
+              <span className="font-semibold text-gray-900">{selectedDate} Archive</span>
             </div>
           </div>
 
@@ -213,7 +209,7 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
               {sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
             </button>
 
-            {/* View Mode Toggle: Grid | Hourly | List */}
+            {/* View Mode Toggle: Grid | List */}
             <div className="flex items-center bg-gray-100 p-1 rounded-lg border border-gray-200 text-xs">
               <button
                 onClick={() => setViewType('grid')}
@@ -222,23 +218,10 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                     ? 'bg-white text-indigo-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
-                title="Grid View with Video Thumbnails"
+                title="Grid View of Hourly Streams"
               >
                 <LayoutGrid className="w-3.5 h-3.5" />
                 <span>Grid View</span>
-              </button>
-
-              <button
-                onClick={() => setViewType('grouped')}
-                className={`px-3 py-1 rounded-md font-semibold transition flex items-center gap-1.5 ${
-                  viewType === 'grouped'
-                    ? 'bg-white text-indigo-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-                title="Hourly Blocks View"
-              >
-                <Layers className="w-3.5 h-3.5" />
-                <span>Hourly Blocks</span>
               </button>
 
               <button
@@ -248,17 +231,17 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                     ? 'bg-white text-indigo-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
-                title="Compact List View"
+                title="List View of Hourly Streams"
               >
                 <List className="w-3.5 h-3.5" />
                 <span>List View</span>
               </button>
             </div>
 
-            {/* Play All Day Button */}
-            {sortedRecordings.length > 0 && !loading && (
+            {/* Play Full Day Button */}
+            {hourGroups.length > 0 && !loading && (
               <button
-                onClick={() => onSelectRecording(sortedRecordings[0])}
+                onClick={() => onSelectRecording(hourGroups[0].clips[0])}
                 className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-lg shadow-sm transition flex items-center gap-1.5"
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
@@ -278,7 +261,7 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                 key={i}
                 className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm animate-pulse flex flex-col space-y-3"
               >
-                <div className="h-36 bg-gray-200 w-full"></div>
+                <div className="h-40 bg-gray-200 w-full"></div>
                 <div className="p-3 space-y-2">
                   <div className="h-4 bg-gray-200 rounded w-2/3"></div>
                   <div className="h-3 bg-gray-100 rounded w-1/3"></div>
@@ -297,86 +280,15 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
               Retry
             </button>
           </div>
-        ) : sortedRecordings.length === 0 ? (
+        ) : hourGroups.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-16 bg-white rounded-xl border border-gray-200 border-dashed text-center my-8 shadow-sm">
             <Video className="w-10 h-10 text-gray-300 mb-2" />
             <h3 className="text-sm font-semibold text-gray-700">No Recordings Found</h3>
             <p className="text-xs text-gray-400 mt-1">No video archive available for {selectedDate}.</p>
           </div>
         ) : viewType === 'grid' ? (
-          /* Grid View Feature: Visual Cards with Video Thumbnails (Starting from 00:00) */
+          /* Grid View: Continuous Hourly Stream Cards (Starting from 00:00 on top!) */
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-            {sortedRecordings.map((rec) => {
-              const startTimeStr = rec.startTime
-                ? new Date(rec.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-                : '00:00:00';
-
-              const durationSec = Math.round(rec.duration || 60);
-              const mediaUrl = getVideoMediaUrl(rec);
-
-              return (
-                <div
-                  key={rec._id}
-                  onClick={() => onSelectRecording(rec)}
-                  className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-xl hover:border-indigo-500 transition duration-300 cursor-pointer group flex flex-col justify-between"
-                >
-                  {/* Visual Video Frame Thumbnail */}
-                  <div className="relative h-36 bg-slate-950 overflow-hidden flex items-center justify-center">
-                    {rec.thumbnailUrl || rec.thumbnailPath ? (
-                      <img
-                        src={rec.thumbnailUrl || resolveApiUrl(apiBaseUrl, rec.thumbnailPath!)}
-                        alt="Clip Thumbnail"
-                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                      />
-                    ) : mediaUrl ? (
-                      <video
-                        src={`${mediaUrl}#t=1`}
-                        preload="metadata"
-                        muted
-                        playsInline
-                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                      />
-                    ) : (
-                      <Video className="w-8 h-8 text-gray-600" />
-                    )}
-
-                    {/* Gradient Overlay & Hover Play Button */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-center justify-center">
-                      <div className="w-11 h-11 rounded-full bg-indigo-600/90 group-hover:bg-indigo-600 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition duration-300 border border-indigo-400">
-                        <Play className="w-5 h-5 fill-current ml-0.5" />
-                      </div>
-                    </div>
-
-                    {/* Top Start Timestamp Badge */}
-                    <div className="absolute top-2.5 left-2.5 bg-black/70 text-white font-mono text-[11px] font-bold px-2 py-0.5 rounded backdrop-blur-md border border-white/20">
-                      {startTimeStr}
-                    </div>
-
-                    {/* Bottom Duration Badge */}
-                    <div className="absolute bottom-2.5 right-2.5 bg-indigo-950/80 text-indigo-300 font-mono text-[10px] font-semibold px-2 py-0.5 rounded backdrop-blur-md border border-indigo-500/40">
-                      {durationSec}s
-                    </div>
-                  </div>
-
-                  {/* Card Bottom Meta */}
-                  <div className="p-3 bg-white flex items-center justify-between border-t border-gray-100">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-gray-800">
-                      <Clock className="w-3.5 h-3.5 text-indigo-500" />
-                      <span>{startTimeStr}</span>
-                    </div>
-
-                    <button className="px-2.5 py-1 bg-indigo-50 group-hover:bg-indigo-600 text-indigo-600 group-hover:text-white rounded-lg text-xs font-semibold transition flex items-center gap-1">
-                      <Play className="w-3 h-3 fill-current" />
-                      <span>Play</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : viewType === 'grouped' ? (
-          /* Hour Grouped View (Starting from 00:00 on top) */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {hourGroups.map((group) => {
               const totalMin = Math.round(group.totalDurationSec / 60);
               const firstClip = group.clips[0];
@@ -388,8 +300,8 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                   onClick={() => onSelectRecording(firstClip)}
                   className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-xl hover:border-indigo-500 transition duration-300 cursor-pointer group flex flex-col justify-between"
                 >
-                  {/* Hour Block Visual Header */}
-                  <div className="relative h-40 bg-slate-950 overflow-hidden flex items-center justify-center">
+                  {/* Hour Block Visual Thumbnail Header */}
+                  <div className="relative h-44 bg-slate-950 overflow-hidden flex items-center justify-center">
                     {firstClip?.thumbnailUrl || firstClip?.thumbnailPath ? (
                       <img
                         src={firstClip.thumbnailUrl || resolveApiUrl(apiBaseUrl, firstClip.thumbnailPath!)}
@@ -408,7 +320,8 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                       <Film className="w-10 h-10 text-gray-600" />
                     )}
 
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent flex flex-col justify-between p-3">
+                    {/* Dark Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent flex flex-col justify-between p-3">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-mono font-bold text-white bg-indigo-600/90 px-2.5 py-0.5 rounded shadow-sm border border-indigo-400">
                           {group.hourLabel}
@@ -418,43 +331,54 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                         </span>
                       </div>
 
+                      {/* Hover Play Button */}
                       <div className="self-center w-12 h-12 rounded-full bg-indigo-600/90 group-hover:bg-indigo-600 text-white flex items-center justify-center shadow-xl group-hover:scale-110 transition duration-300 border border-indigo-300">
                         <Play className="w-5 h-5 fill-current ml-0.5" />
                       </div>
 
                       <div className="text-[11px] font-medium text-gray-300 flex items-center justify-between">
                         <span>Starts at {group.hourLabel.split(' - ')[0]}</span>
-                        <span className="font-semibold text-indigo-300">Click to Play Hour</span>
+                        <span className="font-semibold text-indigo-300 group-hover:underline">Play Stream</span>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Card Bottom Info */}
+                  <div className="p-3.5 bg-white flex items-center justify-between border-t border-gray-100">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-gray-900">
+                      <Clock className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>{group.hourLabel}</span>
+                    </div>
+
+                    <button className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1 shadow-sm">
+                      <Play className="w-3 h-3 fill-current" />
+                      <span>Play</span>
+                    </button>
                   </div>
                 </div>
               );
             })}
           </div>
         ) : (
-          /* List View Feature */
+          /* List View: Continuous Hourly Streams Table */
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm divide-y divide-gray-100">
-            {sortedRecordings.map((rec) => {
-              const startTimeStr = rec.startTime
-                ? new Date(rec.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-                : 'Recorded Stream';
-
-              const durationSec = Math.round(rec.duration || 60);
-              const mediaUrl = getVideoMediaUrl(rec);
+            {hourGroups.map((group) => {
+              const totalMin = Math.round(group.totalDurationSec / 60);
+              const firstClip = group.clips[0];
+              const mediaUrl = getVideoMediaUrl(firstClip);
 
               return (
                 <div
-                  key={rec._id}
-                  onClick={() => onSelectRecording(rec)}
-                  className="p-3.5 flex items-center justify-between hover:bg-indigo-50/50 transition cursor-pointer group"
+                  key={group.hourNum}
+                  onClick={() => onSelectRecording(firstClip)}
+                  className="p-4 flex items-center justify-between hover:bg-indigo-50/50 transition cursor-pointer group"
                 >
                   <div className="flex items-center gap-4">
-                    {/* Small Video Thumbnail */}
-                    <div className="w-20 h-12 bg-slate-900 rounded-lg overflow-hidden shrink-0 relative flex items-center justify-center border border-gray-200">
-                      {rec.thumbnailUrl || rec.thumbnailPath ? (
+                    {/* Video Thumbnail */}
+                    <div className="w-24 h-14 bg-slate-900 rounded-lg overflow-hidden shrink-0 relative flex items-center justify-center border border-gray-200">
+                      {firstClip?.thumbnailUrl || firstClip?.thumbnailPath ? (
                         <img
-                          src={rec.thumbnailUrl || resolveApiUrl(apiBaseUrl, rec.thumbnailPath!)}
+                          src={firstClip.thumbnailUrl || resolveApiUrl(apiBaseUrl, firstClip.thumbnailPath!)}
                           alt="Thumbnail"
                           className="w-full h-full object-cover"
                         />
@@ -469,25 +393,25 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                       ) : (
                         <Video className="w-4 h-4 text-gray-500" />
                       )}
-                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center group-hover:bg-black/40 transition">
-                        <Play className="w-4 h-4 text-white fill-current opacity-80 group-hover:opacity-100 group-hover:scale-110 transition" />
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/50 transition">
+                        <Play className="w-5 h-5 text-white fill-current opacity-90 group-hover:scale-110 transition" />
                       </div>
                     </div>
 
                     <div>
                       <div className="text-sm font-bold text-gray-900 flex items-center gap-2">
                         <Clock className="w-4 h-4 text-indigo-500" />
-                        <span>{startTimeStr}</span>
+                        <span>{group.hourLabel}</span>
                       </div>
-                      <div className="text-xs text-gray-500 mt-0.5">
-                        Duration: {durationSec} seconds
+                      <div className="text-xs text-emerald-600 font-semibold mt-1">
+                        {totalMin} Minutes Continuous Recording
                       </div>
                     </div>
                   </div>
 
-                  <button className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
+                  <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
                     <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>Play Clip</span>
+                    <span>Play Stream</span>
                   </button>
                 </div>
               );
