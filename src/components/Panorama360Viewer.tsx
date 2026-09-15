@@ -150,17 +150,33 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
     if (!selectedRecording || (!selectedRecording.videoPath && !selectedRecording.videoUrl)) return;
 
     const fullVideoUrl = selectedRecording.videoUrl || resolveApiUrl(apiBaseUrl, selectedRecording.videoPath!);
-    console.log(`[OmniRecord Stream] Playing recording video stream: ${fullVideoUrl}`);
+    console.log(`[OmniRecord Stream] Playing video stream (isLiveMode: ${isLiveMode}): ${fullVideoUrl}`);
 
     const video = document.createElement('video');
     video.src = fullVideoUrl;
     video.crossOrigin = 'anonymous';
-    video.loop = false; // Disable loop to allow continuous playback of recording sequence
+    video.loop = isLiveMode; // Loop in live mode to preserve continuous real-time feed
     video.muted = true;
     video.playsInline = true;
 
+    // Zero-lag Live Edge Synchronization
+    const handleLoadedMetadata = () => {
+      if (isLiveMode && video.duration && !isNaN(video.duration)) {
+        console.log(`[OmniRecord Live Sync] Jumping to exact live edge (${video.duration}s) for zero-lag stream`);
+        video.currentTime = Math.max(0, video.duration - 0.2);
+      }
+    };
+
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    video.addEventListener('canplay', handleLoadedMetadata);
+
     // Auto advance to next recording clip when current clip ends
     const handleEnded = () => {
+      if (isLiveMode) {
+        video.currentTime = 0;
+        video.play().catch(() => {});
+        return;
+      }
       console.log('[OmniRecord Stream] Video clip ended, advancing to next continuous recording clip...');
       if (recordings && recordings.length > 0 && selectedRecording) {
         const currentIndex = recordings.findIndex(r => r._id === selectedRecording._id);
@@ -187,13 +203,15 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
     }
 
     return () => {
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      video.removeEventListener('canplay', handleLoadedMetadata);
       video.removeEventListener('ended', handleEnded);
       setVideoElement(null);
       video.pause();
       video.removeAttribute('src');
       video.load();
     };
-  }, [selectedRecording, recordings, apiBaseUrl]);
+  }, [selectedRecording, recordings, apiBaseUrl, isLiveMode]);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
@@ -501,12 +519,17 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
             <span className="font-mono text-xs font-bold text-indigo-300 bg-indigo-950/80 px-2.5 py-0.5 rounded border border-indigo-800/60">
               {currentDate}
             </span>
-            {currentHourLabel && (
+            {isLiveMode ? (
+              <span className="font-mono text-xs font-extrabold text-red-300 bg-red-950/80 px-2.5 py-0.5 rounded border border-red-800/60 flex items-center gap-1.5 shadow-sm animate-pulse">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+                <span>LIVE STREAM (REAL-TIME)</span>
+              </span>
+            ) : currentHourLabel ? (
               <span className="font-mono text-xs font-extrabold text-emerald-300 bg-emerald-950/80 px-2.5 py-0.5 rounded border border-emerald-800/60 flex items-center gap-1.5 shadow-sm">
                 <Clock className="w-3.5 h-3.5 text-emerald-400" />
                 <span>{currentHourLabel}</span>
               </span>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -641,22 +664,24 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
         </button>
       </div>
 
-      {/* Docked Cupola Ruler Timeline */}
-      <div className="relative z-30 border-t border-[#262A34] bg-[#121418] shrink-0">
-        <PlaybackTimeline
-          currentDate={viewDate}
-          recordings={recordings}
-          neighbors={neighbors}
-          apiBaseUrl={apiBaseUrl}
-          authToken={authToken}
-          onSelectRecording={(rec) => {
-            setSelectedRecording(rec);
-            setIsLiveMode(false);
-          }}
-          activeRecording={isLiveMode ? null : selectedRecording}
-          videoElement={videoElement}
-        />
-      </div>
+      {/* Docked Cupola Ruler Timeline (Only shown in RECORDED mode) */}
+      {!isLiveMode && (
+        <div className="relative z-30 border-t border-[#262A34] bg-[#121418] shrink-0">
+          <PlaybackTimeline
+            currentDate={viewDate}
+            recordings={recordings}
+            neighbors={neighbors}
+            apiBaseUrl={apiBaseUrl}
+            authToken={authToken}
+            onSelectRecording={(rec) => {
+              setSelectedRecording(rec);
+              setIsLiveMode(false);
+            }}
+            activeRecording={selectedRecording}
+            videoElement={videoElement}
+          />
+        </div>
+      )}
     </div>
   );
 };
