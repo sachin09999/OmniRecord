@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { Camera, RecordingItem } from '../types/camera';
 import { fetchCameraRecordings, extractCameraPath, resolveApiUrl } from '../services/apiService';
+import { ModernCalendarPicker } from './ModernCalendarPicker';
 import {
   ChevronLeft,
-  Calendar,
   Clock,
   Video,
   Play,
@@ -49,6 +49,8 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [viewType, setViewType] = useState<'grid' | 'list'>('grid');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc'); // Default 00:00 on top!
+  const [latestDate, setLatestDate] = useState<string | undefined>(undefined);
+  const userChangedDateRef = useRef<boolean>(false);
 
   const activeCameraPath = extractCameraPath(camera);
 
@@ -64,6 +66,30 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
       .then((res) => {
         setRecordings(res.recordings);
         setLoading(false);
+
+        if (res.recordings && res.recordings.length > 0) {
+          const recordingDates = res.recordings
+            .filter((r) => r.startTime)
+            .map((r) => {
+              const d = new Date(r.startTime!);
+              const y = d.getUTCFullYear();
+              const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+              const dd = String(d.getUTCDate()).padStart(2, '0');
+              return `${y}/${m}/${dd}`;
+            });
+
+          if (recordingDates.length > 0) {
+            recordingDates.sort();
+            const newestDate = recordingDates[recordingDates.length - 1];
+            setLatestDate(newestDate);
+
+            // Auto-select latest recording date if user hasn't explicitly picked a date yet and current is empty
+            if (!userChangedDateRef.current && newestDate && res.recordings.length === 0) {
+              setSelectedDate(newestDate);
+              if (onDateChange) onDateChange(newestDate);
+            }
+          }
+        }
       })
       .catch((err) => {
         console.error('Failed to fetch recordings:', err);
@@ -77,12 +103,11 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
   }, [camera, selectedDate, apiBaseUrl, authToken]);
 
   const handleDateChange = (newDate: string) => {
+    userChangedDateRef.current = true;
     const formatted = newDate.replace(/-/g, '/');
     setSelectedDate(formatted);
     if (onDateChange) onDateChange(formatted);
   };
-
-  const formattedInputDate = selectedDate.split('/').join('-');
 
   // Group 1-minute raw recording segments into Continuous Hourly Stream Blocks
   const hourGroups = useMemo(() => {
@@ -156,17 +181,13 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
           </div>
         </div>
 
-        {/* Date Selector & Refresh */}
+        {/* Modern Custom Calendar Selector & Refresh */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 shadow-sm">
-            <Calendar className="w-3.5 h-3.5 text-gray-500" />
-            <input
-              type="date"
-              value={formattedInputDate}
-              onChange={(e) => handleDateChange(e.target.value)}
-              className="bg-transparent text-xs font-semibold text-gray-800 focus:outline-none cursor-pointer"
-            />
-          </div>
+          <ModernCalendarPicker
+            selectedDate={selectedDate}
+            onSelectDate={handleDateChange}
+            latestRecordingDate={latestDate}
+          />
 
           <button
             onClick={() => loadRecordings(selectedDate)}

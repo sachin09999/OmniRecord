@@ -22,7 +22,13 @@ export function App() {
   const [authToken, setAuthToken] = useState<string>('');
   const [isLiveConnected, setIsLiveConnected] = useState<boolean>(false);
 
-  const [currentDate, setCurrentDate] = useState<string>('2026/09/12');
+  const [currentDate, setCurrentDate] = useState<string>(() => {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    return `${yyyy}/${mm}/${dd}`;
+  });
   const [selectedSite, setSelectedSite] = useState<string>('UAE-OFFICE');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'map'>('grid');
