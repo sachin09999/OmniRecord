@@ -59,6 +59,7 @@ export interface PlantData {
   updateTime: string;
   createTime: string;
   cameras: Camera[];
+  _debugRecordingsFetch?: string;
 }
 
 export interface ApiResponse {

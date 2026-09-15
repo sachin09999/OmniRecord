@@ -215,24 +215,29 @@ export async function fetchPlantData(
       const data: ApiResponse = await res.json();
       if (data.success && data.data) {
         let validCameraPaths = new Set<string>();
+        let debugFetch = 'Not attempted';
         try {
           const recUrl = resolveApiUrl(apiBaseUrl, `/2/account/plant/${plantId}/recordings?plantId=${plantId}&videoToken=true`);
           const recRes = await fetch(recUrl, { headers: getHeaders(activeToken), credentials: 'same-origin' });
+          debugFetch = `Status: ${recRes.status}`;
           if (recRes.ok) {
             const recData = await recRes.json();
             if (recData.data && Array.isArray(recData.data)) {
+              debugFetch += ` | Total Recordings: ${recData.data.length}`;
               recData.data.forEach((r: any) => {
                 if (r.cameraPath) validCameraPaths.add(r.cameraPath);
                 if (r.path) validCameraPaths.add(r.path);
                 if (r.name) validCameraPaths.add(r.name);
               });
-              console.log(`[OmniRecord] Found ${validCameraPaths.size} unique cameras with recordings from Cupola 360.`);
+              debugFetch += ` | Unique Cameras: ${validCameraPaths.size}`;
+            } else {
+              debugFetch += ` | Data is not an array. Type: ${typeof recData.data}`;
             }
           }
-        } catch (e) {
-          console.warn('[OmniRecord] Failed to fetch recordings to filter cameras', e);
+        } catch (e: any) {
+          debugFetch = `Exception: ${e.message}`;
         }
-        return augmentPlantData(data.data, apiBaseUrl, validCameraPaths);
+        return augmentPlantData(data.data, apiBaseUrl, validCameraPaths, debugFetch);
       }
     }
   } catch (err) {
@@ -276,7 +281,7 @@ export async function fetchPlantData(
   return getMockPlantData(plantId, apiBaseUrl);
 }
 
-function augmentPlantData(rawPlant: PlantData, apiBaseUrl: string, validCameraPaths?: Set<string>): PlantData {
+function augmentPlantData(rawPlant: PlantData, apiBaseUrl: string, validCameraPaths?: Set<string>, debugFetchStatus?: string): PlantData {
   // Log the first camera to help debug what properties are available
   if (rawPlant.cameras && rawPlant.cameras.length > 0) {
     console.log('[OmniRecord] First camera data from API:', rawPlant.cameras[0]);
@@ -325,6 +330,7 @@ function augmentPlantData(rawPlant: PlantData, apiBaseUrl: string, validCameraPa
 
   return {
     ...rawPlant,
+    _debugRecordingsFetch: debugFetchStatus,
     renderFile: createProceduralFloorplan(),
     cameras: augmentedCameras,
   };

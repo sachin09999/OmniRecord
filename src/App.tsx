@@ -125,6 +125,9 @@ export function App() {
         {/* DEBUG BANNER FOR SCREENSHOT */}
         <div className="bg-red-900/50 border border-red-500 text-red-200 p-3 rounded-lg text-[10px] font-mono break-all mb-4 shadow-lg shadow-red-900/20">
           <strong>DEBUG (Please screenshot this block):</strong><br />
+          {plantData?._debugRecordingsFetch && (
+            <div className="text-cyan-300 mb-2">Recordings API Fetch: {plantData._debugRecordingsFetch}</div>
+          )}
           {plantData?.cameras && plantData.cameras.length > 0 ? (
             Object.keys(plantData.cameras[0]).filter(k => !['icons', 'x', 'y', 'panoramaUrl', 'thumbnailUrl'].includes(k)).map(key => (
               <span key={key} className="mr-3">
