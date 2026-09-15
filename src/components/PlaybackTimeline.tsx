@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import type { RecordingItem, Neighbors } from '../types/camera';
-import { resolveRecordingThumbnailUrl } from '../services/apiService';
+import { resolveRecordingThumbnailUrl, downloadVideoFile } from '../services/apiService';
 import {
   Play,
   Pause,
@@ -118,7 +118,7 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
   }, [videoElement, playbackSpeed]);
 
   // Frame Cut & MP4 Download trigger handler
-  const handleDownloadCutMp4 = () => {
+  const handleDownloadCutMp4 = async () => {
     let mediaUrl = activeRecording?.videoUrl || (activeRecording?.videoPath ? `${apiBaseUrl}/${activeRecording.videoPath}` : undefined);
     if (!mediaUrl && videoElement?.src) {
       mediaUrl = videoElement.src;
@@ -134,16 +134,11 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
     setIsExportingCut(true);
 
     if (mediaUrl) {
-      // Trigger instant direct download of `.mp4` video format
-      const a = document.createElement('a');
-      a.href = mediaUrl;
-      a.download = filename;
-      a.target = '_blank';
-      a.click();
-      setTimeout(() => setIsExportingCut(false), 1500);
-    } else {
-      setTimeout(() => setIsExportingCut(false), 1000);
+      // Trigger in-place MP4 download without navigating window
+      await downloadVideoFile(mediaUrl, filename);
     }
+    
+    setTimeout(() => setIsExportingCut(false), 1200);
   };
 
   // Center scroll container viewport on current playhead position when zoomed in

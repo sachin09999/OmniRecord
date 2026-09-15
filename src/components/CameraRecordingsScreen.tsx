@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { Camera, RecordingItem } from '../types/camera';
-import { fetchCameraRecordings, extractCameraPath, resolveApiUrl, resolveRecordingThumbnailUrl } from '../services/apiService';
+import { fetchCameraRecordings, extractCameraPath, resolveApiUrl, resolveRecordingThumbnailUrl, downloadVideoFile } from '../services/apiService';
 import { ModernCalendarPicker } from './ModernCalendarPicker';
 import { ModernLoadingSpinner } from './ModernLoadingSpinner';
 
@@ -59,9 +59,17 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
   const [viewType, setViewType] = useState<'grid' | 'list'>('grid');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc'); // Default 00:00 on top!
   const [latestDate, setLatestDate] = useState<string | undefined>(undefined);
+  const [downloadingItem, setDownloadingItem] = useState<string | null>(null);
   const userChangedDateRef = useRef<boolean>(false);
 
   const activeCameraPath = extractCameraPath(camera);
+
+  const handleStartDownload = async (e: React.MouseEvent, url: string, filename: string) => {
+    e.stopPropagation();
+    setDownloadingItem(filename);
+    await downloadVideoFile(url, filename);
+    setTimeout(() => setDownloadingItem(null), 1200);
+  };
 
   useEffect(() => {
     setSelectedDate(currentDate);
@@ -439,17 +447,14 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
 
                     <div className="flex items-center gap-1.5">
                       {mediaUrl && (
-                        <a
-                          href={mediaUrl}
-                          download={`OmniRecord_${camera.name}_${group.hourLabel.replace(/:/g, '-')}.mp4`}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="p-1.5 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/50 rounded-lg text-xs transition"
+                        <button
+                          onClick={(e) => handleStartDownload(e, mediaUrl, `OmniRecord_${camera.name}_${group.hourLabel.replace(/:/g, '-')}.mp4`)}
+                          className="p-1.5 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/50 rounded-lg text-xs transition flex items-center gap-1"
                           title="Download MP4 Recording"
                         >
-                          <Download className="w-3.5 h-3.5" />
-                        </a>
+                          <Download className={`w-3.5 h-3.5 ${downloadingItem ? 'animate-bounce text-emerald-400' : ''}`} />
+                          <span className="text-[10px] font-mono font-bold hidden xl:inline">MP4</span>
+                        </button>
                       )}
 
                       <button className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1 shadow-sm">
@@ -515,17 +520,14 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
 
                   <div className="flex items-center gap-2">
                     {mediaUrl && (
-                      <a
-                        href={mediaUrl}
-                        download={`OmniRecord_${camera.name}_${group.hourLabel.replace(/:/g, '-')}.mp4`}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="p-2 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/50 rounded-lg text-xs transition"
-                        title="Download MP4 Video"
+                      <button
+                        onClick={(e) => handleStartDownload(e, mediaUrl, `OmniRecord_${camera.name}_${group.hourLabel.replace(/:/g, '-')}.mp4`)}
+                        className="px-3 py-1.5 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/50 rounded-lg text-xs transition flex items-center gap-1.5 font-mono font-bold"
+                        title="Download MP4 Video Stream"
                       >
                         <Download className="w-4 h-4" />
-                      </a>
+                        <span>Download MP4</span>
+                      </button>
                     )}
 
                     <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
@@ -539,6 +541,23 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
           </div>
         )}
       </main>
+
+      {/* Main Screen Floating Download Status Badge & Progress UI */}
+      {downloadingItem && (
+        <div className="fixed bottom-6 right-6 z-50 bg-[#0F121C]/95 border border-emerald-500/60 text-white px-5 py-3 rounded-2xl shadow-2xl backdrop-blur-xl flex items-center gap-4 animate-bounce">
+          <div className="w-9 h-9 rounded-xl bg-emerald-600/30 border border-emerald-500 flex items-center justify-center text-emerald-400">
+            <Download className="w-5 h-5 animate-pulse" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+              <span>Downloading MP4 Recording...</span>
+            </span>
+            <span className="text-[11px] font-mono text-gray-400 truncate max-w-[220px]">
+              {downloadingItem}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

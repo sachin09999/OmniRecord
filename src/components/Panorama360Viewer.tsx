@@ -92,8 +92,12 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
 
   useEffect(() => {
     setSelectedRecording(activeRecording);
+    if (!activeRecording) {
+      setIsLiveMode(true);
+    }
   }, [activeRecording]);
 
+  // Initial recording fetch
   useEffect(() => {
     let isMounted = true;
 
@@ -101,6 +105,10 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
       if (isMounted) {
         setRecordings(res.recordings);
         setNeighbors(res.neighbors);
+        if ((isLiveMode || !activeRecording) && res.recordings.length > 0) {
+          // Select newest / latest clip (index 0) for Live Stream
+          setSelectedRecording(res.recordings[0]);
+        }
       }
     });
 
@@ -108,6 +116,35 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
       isMounted = false;
     };
   }, [camera, viewDate, apiBaseUrl, authToken]);
+
+  // Live Stream polling to keep stream updated with latest live recordings
+  useEffect(() => {
+    if (!isLiveMode) return;
+
+    const pollLiveStream = () => {
+      const todayDateStr = new Date().toISOString().split('T')[0];
+      fetchCameraRecordings(apiBaseUrl, camera, todayDateStr, undefined, undefined, authToken).then((res) => {
+        if (res.recordings && res.recordings.length > 0) {
+          setRecordings(res.recordings);
+          setNeighbors(res.neighbors);
+          const latestClip = res.recordings[0];
+          // Update selected recording if a newer live recording segment arrived
+          setSelectedRecording((prev) => {
+            if (!prev || prev._id !== latestClip._id) {
+              console.log('[OmniRecord Live] Updated to latest live camera segment:', latestClip);
+              return latestClip;
+            }
+            return prev;
+          });
+        }
+      });
+    };
+
+    pollLiveStream();
+    const intervalId = setInterval(pollLiveStream, 8000);
+
+    return () => clearInterval(intervalId);
+  }, [isLiveMode, camera, apiBaseUrl, authToken]);
 
   useEffect(() => {
     if (!selectedRecording || (!selectedRecording.videoPath && !selectedRecording.videoUrl)) return;
@@ -585,11 +622,11 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
               setIsLiveMode(false);
             } else {
               setIsLiveMode(true);
-              if (neighbors.previous) {
-                setSelectedRecording(neighbors.previous);
-              } else if (recordings.length > 0) {
+              if (recordings && recordings.length > 0) {
+                // Select newest / latest clip (recordings[0]) for current live feed
                 setSelectedRecording(recordings[0]);
               }
+              triggerToast('Switched to Live Camera Stream');
             }
           }}
           className={`absolute bottom-6 right-6 z-40 px-3.5 py-1.5 rounded-full text-[11px] font-extrabold transition-all duration-200 shadow-2xl flex items-center gap-1.5 backdrop-blur-md cursor-pointer border ${
