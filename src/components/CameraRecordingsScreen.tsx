@@ -17,7 +17,8 @@ import {
   List,
   ArrowUpDown,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Download
 } from 'lucide-react';
 
 interface CameraRecordingsScreenProps {
@@ -436,10 +437,26 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                       <span className={isDark ? 'text-slate-100' : 'text-gray-900'}>{group.hourLabel}</span>
                     </div>
 
-                    <button className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1 shadow-sm">
-                      <Play className="w-3 h-3 fill-current" />
-                      <span>Play</span>
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      {mediaUrl && (
+                        <a
+                          href={mediaUrl}
+                          download={`OmniRecord_${camera.name}_${group.hourLabel.replace(/:/g, '-')}.mp4`}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="p-1.5 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/50 rounded-lg text-xs transition"
+                          title="Download MP4 Recording"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+
+                      <button className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1 shadow-sm">
+                        <Play className="w-3 h-3 fill-current" />
+                        <span>Play</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -496,10 +513,26 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                     </div>
                   </div>
 
-                  <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>Play Stream</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {mediaUrl && (
+                      <a
+                        href={mediaUrl}
+                        download={`OmniRecord_${camera.name}_${group.hourLabel.replace(/:/g, '-')}.mp4`}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-2 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/50 rounded-lg text-xs transition"
+                        title="Download MP4 Video"
+                      >
+                        <Download className="w-4 h-4" />
+                      </a>
+                    )}
+
+                    <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                      <Play className="w-3.5 h-3.5 fill-current" />
+                      <span>Play Stream</span>
+                    </button>
+                  </div>
                 </div>
               );
             })}

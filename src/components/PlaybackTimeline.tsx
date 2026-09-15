@@ -10,7 +10,12 @@ import {
   RotateCw,
   ZoomIn,
   ZoomOut,
-  Maximize2
+  Maximize2,
+  Gauge,
+  Scissors,
+  Download,
+  X,
+  Check
 } from 'lucide-react';
 
 interface PlaybackTimelineProps {
@@ -38,6 +43,16 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
   const [zoomScale, setZoomScale] = useState<number>(1); // 1x to 8x zoom
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [hoveredSeconds, setHoveredSeconds] = useState<number | null>(null);
+
+  // Playback Speed Adjustment State
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
+  const [showSpeedMenu, setShowSpeedMenu] = useState<boolean>(false);
+
+  // Frame Cut & Download State
+  const [cutStartSeconds, setCutStartSeconds] = useState<number | null>(null);
+  const [cutEndSeconds, setCutEndSeconds] = useState<number | null>(null);
+  const [isCutMode, setIsCutMode] = useState<boolean>(false);
+  const [isExportingCut, setIsExportingCut] = useState<boolean>(false);
 
   const trackRef = useRef<HTMLDivElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -94,6 +109,42 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
       videoElement.removeEventListener('pause', handlePause);
     };
   }, [videoElement, activeRecording, getSecondsFromIso, isDragging]);
+
+  // Sync playback speed with video HTML element
+  useEffect(() => {
+    if (videoElement) {
+      videoElement.playbackRate = playbackSpeed;
+    }
+  }, [videoElement, playbackSpeed]);
+
+  // Frame Cut & MP4 Download trigger handler
+  const handleDownloadCutMp4 = () => {
+    let mediaUrl = activeRecording?.videoUrl || (activeRecording?.videoPath ? `${apiBaseUrl}/${activeRecording.videoPath}` : undefined);
+    if (!mediaUrl && videoElement?.src) {
+      mediaUrl = videoElement.src;
+    }
+
+    const startSec = cutStartSeconds !== null ? cutStartSeconds : currentSeconds;
+    const endSec = cutEndSeconds !== null ? cutEndSeconds : Math.min(86400, startSec + 60);
+
+    const startStr = formatTimeStr(startSec).replace(/:/g, '-');
+    const endStr = formatTimeStr(endSec).replace(/:/g, '-');
+    const filename = `OmniRecord_Cut_${startStr}_to_${endStr}.mp4`;
+
+    setIsExportingCut(true);
+
+    if (mediaUrl) {
+      // Trigger instant direct download of `.mp4` video format
+      const a = document.createElement('a');
+      a.href = mediaUrl;
+      a.download = filename;
+      a.target = '_blank';
+      a.click();
+      setTimeout(() => setIsExportingCut(false), 1500);
+    } else {
+      setTimeout(() => setIsExportingCut(false), 1000);
+    }
+  };
 
   // Center scroll container viewport on current playhead position when zoomed in
   useEffect(() => {
@@ -377,7 +428,7 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
             ))}
           </div>
 
-          {/* Middle Layer: Recording Track Channel Bar */}
+          {/* Middle Layer: Recording Track Channel Bar & Cut Segment Overlay */}
           <div className="relative w-full h-5 bg-[#141722] border border-[#23293A] rounded-full overflow-hidden shadow-inner flex items-center my-auto">
             {recordingBlocks.map((block) => (
               <div
@@ -386,6 +437,17 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
                 className="absolute h-full bg-[#4F46E5] opacity-90 transition-all z-0"
               />
             ))}
+
+            {/* Glowing Cut Selection Range Highlight */}
+            {cutStartSeconds !== null && cutEndSeconds !== null && cutStartSeconds < cutEndSeconds && (
+              <div
+                style={{
+                  left: `${(cutStartSeconds / 86400) * 100}%`,
+                  width: `${((cutEndSeconds - cutStartSeconds) / 86400) * 100}%`
+                }}
+                className="absolute h-full bg-amber-500/80 border-y-2 border-amber-300 z-10 animate-pulse shadow-[0_0_12px_rgba(245,158,11,0.6)]"
+              />
+            )}
           </div>
 
           {/* Bottom Layer: Ruler Tick Marks */}
@@ -446,10 +508,113 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
         </div>
       </div>
 
-      {/* Right Section: Time Display & Zoom Controls */}
-      <div className="flex items-center gap-4 shrink-0 pl-4 border-l border-[#1F2432]">
+      {/* Right Section: Speed Adjust, Cut Tools, Time Display & Zoom Controls */}
+      <div className="flex items-center gap-3 shrink-0 pl-4 border-l border-[#1F2432]">
+        
+        {/* Playback Speed Adjustment Button & Menu */}
+        <div className="relative">
+          <button
+            onClick={() => setShowSpeedMenu(!showSpeedMenu)}
+            className={`px-2.5 py-1 rounded-lg text-xs font-bold font-mono transition flex items-center gap-1 border ${
+              playbackSpeed !== 1
+                ? 'bg-amber-600/30 text-amber-300 border-amber-500/60 shadow-sm'
+                : 'bg-[#141722] hover:bg-[#1C2130] text-gray-300 border-[#23293A]'
+            }`}
+            title="Adjust Playback Speed"
+          >
+            <Gauge className="w-3.5 h-3.5 text-amber-400" />
+            <span>{playbackSpeed}x</span>
+          </button>
+
+          {showSpeedMenu && (
+            <div className="absolute bottom-full mb-2 right-0 bg-[#12151E] border border-[#2B3245] rounded-xl p-1 shadow-2xl z-50 flex flex-col gap-0.5 min-w-[90px] backdrop-blur-xl">
+              {[0.25, 0.5, 1, 1.25, 1.5, 2, 4].map((spd) => (
+                <button
+                  key={spd}
+                  onClick={() => {
+                    setPlaybackSpeed(spd);
+                    setShowSpeedMenu(false);
+                  }}
+                  className={`w-full text-left px-3 py-1 rounded-lg text-xs font-mono font-bold flex items-center justify-between transition ${
+                    playbackSpeed === spd
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-gray-300 hover:bg-[#1E2333] hover:text-white'
+                  }`}
+                >
+                  <span>{spd}x</span>
+                  {playbackSpeed === spd && <Check className="w-3 h-3 text-white" />}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Frame Cut & Trim Tool Controls */}
+        <div className="flex items-center bg-[#141722] border border-[#23293A] rounded-xl p-1 gap-1">
+          <button
+            onClick={() => setIsCutMode(!isCutMode)}
+            className={`p-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+              isCutMode || cutStartSeconds !== null
+                ? 'bg-amber-600 text-white shadow-sm'
+                : 'text-gray-400 hover:text-white hover:bg-[#1C2130]'
+            }`}
+            title="Frame Cut & Trim Tool"
+          >
+            <Scissors className="w-3.5 h-3.5" />
+            <span className="hidden xl:inline text-[11px]">Cut</span>
+          </button>
+
+          {isCutMode && (
+            <>
+              <button
+                onClick={() => setCutStartSeconds(currentSeconds)}
+                className={`px-2 py-0.5 rounded text-[11px] font-mono font-extrabold transition ${
+                  cutStartSeconds !== null ? 'bg-indigo-600 text-white' : 'bg-[#212738] text-indigo-300 hover:bg-[#2C344A]'
+                }`}
+                title="Set Start Cut Marker"
+              >
+                [ Start
+              </button>
+
+              <button
+                onClick={() => setCutEndSeconds(currentSeconds)}
+                className={`px-2 py-0.5 rounded text-[11px] font-mono font-extrabold transition ${
+                  cutEndSeconds !== null ? 'bg-indigo-600 text-white' : 'bg-[#212738] text-indigo-300 hover:bg-[#2C344A]'
+                }`}
+                title="Set End Cut Marker"
+              >
+                End ]
+              </button>
+
+              {(cutStartSeconds !== null || cutEndSeconds !== null) && (
+                <button
+                  onClick={() => {
+                    setCutStartSeconds(null);
+                    setCutEndSeconds(null);
+                  }}
+                  className="p-1 text-red-400 hover:text-red-300 hover:bg-red-950/40 rounded transition"
+                  title="Clear Cut Segment"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Download Video in MP4 Format Button */}
+        <button
+          onClick={handleDownloadCutMp4}
+          disabled={isExportingCut}
+          className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-extrabold text-xs shadow-md shadow-emerald-600/30 transition flex items-center gap-1.5 shrink-0"
+          title="Download Clip / Cut Range as MP4 Video"
+        >
+          <Download className={`w-3.5 h-3.5 ${isExportingCut ? 'animate-bounce' : ''}`} />
+          <span className="font-mono">{isExportingCut ? 'Exporting...' : 'MP4'}</span>
+        </button>
+
         {/* Monospace Timestamp Badge */}
-        <div className="flex flex-col items-end">
+        <div className="flex flex-col items-end hidden sm:flex">
           <span className="text-[9px] text-indigo-400 uppercase tracking-widest font-bold">Playback Time</span>
           <span className="font-mono text-sm font-extrabold text-white tracking-wider bg-[#141722] px-3 py-1 rounded-lg border border-[#23293A] shadow-sm">
             {formattedDisplayTime}

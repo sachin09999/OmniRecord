@@ -398,7 +398,19 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
 
       try {
         const stream = canvas.captureStream(30);
-        const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+
+        let mimeType = 'video/mp4';
+        if (!MediaRecorder.isTypeSupported('video/mp4')) {
+          if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')) {
+            mimeType = 'video/mp4;codecs=avc1';
+          } else if (MediaRecorder.isTypeSupported('video/webm;codecs=h264')) {
+            mimeType = 'video/webm;codecs=h264';
+          } else {
+            mimeType = 'video/webm';
+          }
+        }
+
+        const recorder = new MediaRecorder(stream, { mimeType });
 
         recordedChunksRef.current = [];
         recorder.ondataavailable = (e) => {
@@ -406,11 +418,11 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
         };
 
         recorder.onstop = () => {
-          const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+          const blob = new Blob(recordedChunksRef.current, { type: 'video/mp4' });
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `OmniRecord_Patrol_${camera.name}_${Date.now()}.webm`;
+          a.download = `OmniRecord_Patrol_${camera.name}_${Date.now()}.mp4`;
           a.click();
         };
 
