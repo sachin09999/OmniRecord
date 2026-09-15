@@ -91,6 +91,7 @@ export interface RecordingItem {
   lastSeen?: string;
   videoUrl?: string;
   videoPath?: string;
+  thumbnailUrl?: string;
   thumbnailPath?: string;
   osdEvents?: any[];
   scanned?: boolean;
