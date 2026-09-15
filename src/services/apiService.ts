@@ -217,7 +217,14 @@ export async function fetchPlantData(
         let validCameraPaths = new Set<string>();
         let debugFetch = 'Not attempted';
         try {
-          const recUrl = resolveApiUrl(apiBaseUrl, `/2/account/plant/${plantId}/recordings?plantId=${plantId}&videoToken=true`);
+          // Calculate time range (last 24 hours) for the recordings query
+          const prevDay = new Date();
+          prevDay.setUTCDate(prevDay.getUTCDate() - 1);
+          const startTime = `${prevDay.toISOString().split('T')[0]}T20:00:00.000Z`;
+          const endTime = `${new Date().toISOString().split('T')[0]}T19:59:59.999Z`;
+
+          // Use the actual API route instead of the frontend route
+          const recUrl = resolveApiUrl(apiBaseUrl, `/1/account/recordings?plantId=${plantId}&startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&videoToken=true`);
           const recRes = await fetch(recUrl, { headers: getHeaders(activeToken), credentials: 'same-origin' });
           debugFetch = `Status: ${recRes.status}`;
           if (recRes.ok) {
