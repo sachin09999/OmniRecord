@@ -65,6 +65,7 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
   const [neighbors, setNeighbors] = useState<Neighbors>({ previous: null, next: null });
   const [isFetchingRecordings, setIsFetchingRecordings] = useState<boolean>(false);
   const [activeRecording, setActiveRecording] = useState<RecordingItem | null>(null);
+  const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -96,6 +97,10 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
     video.loop = true;
     video.muted = true;
     video.playsInline = true;
+    
+    // Set video state so child components can control it
+    setVideoElement(video);
+    
     video.play().catch((err) => console.warn('[OmniRecord] Video playback autoplay blocked:', err));
 
     const videoTexture = new THREE.VideoTexture(video);
@@ -107,6 +112,7 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
     }
 
     return () => {
+      setVideoElement(null);
       video.pause();
       video.removeAttribute('src');
       video.load();
@@ -634,6 +640,7 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
             apiBaseUrl={apiBaseUrl}
             onSelectRecording={(rec) => setActiveRecording(rec)}
             activeRecording={activeRecording}
+            videoElement={videoElement}
           />
         </div>
       )}

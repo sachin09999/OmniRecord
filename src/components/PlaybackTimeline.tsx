@@ -16,6 +16,7 @@ interface PlaybackTimelineProps {
   apiBaseUrl?: string;
   onSelectRecording?: (rec: RecordingItem) => void;
   activeRecording?: RecordingItem | null;
+  videoElement?: HTMLVideoElement | null;
 }
 
 export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
@@ -23,13 +24,53 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
   recordings = [],
   neighbors,
   onSelectRecording,
-  activeRecording
+  activeRecording,
+  videoElement
 }) => {
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
   const [currentSeconds, setCurrentSeconds] = useState<number>(
     activeRecording && activeRecording.startTime ? getSecondsFromIso(activeRecording.startTime) : 5 * 3600 + 2 * 60 + 2
   );
+  
+  // Convert ISO string to seconds from start of day
+  function getSecondsFromIso(isoStr?: string): number {
+    if (!isoStr) return 0;
+    try {
+      const d = new Date(isoStr);
+      return d.getUTCHours() * 3600 + d.getUTCMinutes() * 60 + d.getUTCSeconds();
+    } catch {
+      return 0;
+    }
+  }
+
+  React.useEffect(() => {
+    if (!videoElement) return;
+
+    const handleTimeUpdate = () => {
+      if (activeRecording && activeRecording.startTime) {
+        const startSecs = getSecondsFromIso(activeRecording.startTime);
+        setCurrentSeconds(startSecs + videoElement.currentTime);
+      }
+    };
+
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+
+    videoElement.addEventListener('timeupdate', handleTimeUpdate);
+    videoElement.addEventListener('play', handlePlay);
+    videoElement.addEventListener('pause', handlePause);
+    
+    // Sync initial state
+    setIsPlaying(!videoElement.paused);
+    videoElement.playbackRate = playbackSpeed;
+
+    return () => {
+      videoElement.removeEventListener('timeupdate', handleTimeUpdate);
+      videoElement.removeEventListener('play', handlePlay);
+      videoElement.removeEventListener('pause', handlePause);
+    };
+  }, [videoElement, activeRecording, playbackSpeed]);
 
   const speeds = [0.5, 1, 2, 4, 8];
 
@@ -42,19 +83,47 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
   };
 
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCurrentSeconds(parseInt(e.target.value, 10));
+    const newSecs = parseInt(e.target.value, 10);
+    setCurrentSeconds(newSecs);
+    if (videoElement && activeRecording && activeRecording.startTime) {
+      const startSecs = getSecondsFromIso(activeRecording.startTime);
+      const relativeTime = newSecs - startSecs;
+      // Only seek if the time is within the recording bounds (approximate, allow slight overflow)
+      if (relativeTime >= 0 && relativeTime <= (activeRecording.duration || 3600)) {
+        videoElement.currentTime = relativeTime;
+      }
+    }
   };
 
-  // Convert ISO string to seconds from start of day
-  function getSecondsFromIso(isoStr?: string): number {
-    if (!isoStr) return 0;
-    try {
-      const d = new Date(isoStr);
-      return d.getUTCHours() * 3600 + d.getUTCMinutes() * 60 + d.getUTCSeconds();
-    } catch {
-      return 0;
+  const togglePlay = () => {
+    if (!videoElement) {
+      setIsPlaying(!isPlaying);
+      return;
     }
-  }
+    if (videoElement.paused) {
+      videoElement.play();
+    } else {
+      videoElement.pause();
+    }
+  };
+
+  const handleSeekDelta = (delta: number) => {
+    setCurrentSeconds((s) => {
+      const newS = Math.max(0, Math.min(86400, s + delta));
+      if (videoElement && activeRecording && activeRecording.startTime) {
+        const startSecs = getSecondsFromIso(activeRecording.startTime);
+        videoElement.currentTime = Math.max(0, newS - startSecs);
+      }
+      return newS;
+    });
+  };
+
+  const handleSpeedChange = (spd: number) => {
+    setPlaybackSpeed(spd);
+    if (videoElement) {
+      videoElement.playbackRate = spd;
+    }
+  };
 
   return (
     <div className="w-full px-6 py-4 bg-white text-gray-900 select-none shadow-inner">
@@ -77,7 +146,7 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
 
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setCurrentSeconds((s) => Math.max(0, s - 30))}
+              onClick={() => handleSeekDelta(-30)}
               className="p-2 rounded-full text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition border border-transparent hover:border-indigo-100"
               title="Rewind 30s"
             >
@@ -85,7 +154,7 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
             </button>
 
             <button
-              onClick={() => setIsPlaying(!isPlaying)}
+              onClick={togglePlay}
               className="p-2.5 rounded-full bg-indigo-600 text-white font-bold hover:bg-indigo-500 transition shadow-md shadow-indigo-600/30 active:scale-95"
               title={isPlaying ? 'Pause Playback' : 'Play Recording'}
             >
@@ -93,7 +162,7 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
             </button>
 
             <button
-              onClick={() => setCurrentSeconds((s) => Math.min(86400, s + 30))}
+              onClick={() => handleSeekDelta(30)}
               className="p-2 rounded-full text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition border border-transparent hover:border-indigo-100"
               title="Fast Forward 30s"
             >
@@ -124,7 +193,7 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
               {speeds.map((spd) => (
                 <button
                   key={spd}
-                  onClick={() => setPlaybackSpeed(spd)}
+                  onClick={() => handleSpeedChange(spd)}
                   className={`px-2.5 py-1 rounded-md text-[10px] font-bold font-mono transition ${
                     playbackSpeed === spd
                       ? 'bg-white text-indigo-700 shadow-sm border border-gray-200'
