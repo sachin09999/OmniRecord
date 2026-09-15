@@ -215,6 +215,8 @@ export async function fetchPlantData(
       const data: ApiResponse = await res.json();
       if (data.data) {
         let validCameraPaths = new Set<string>();
+        let cameraThumbMap = new Map<string, string>();
+
         try {
           // Calculate time range (last 24 hours) for the recordings query
           const prevDay = new Date();
@@ -222,9 +224,9 @@ export async function fetchPlantData(
           const startTime = `${prevDay.toISOString().split('T')[0]}T20:00:00.000Z`;
           const endTime = `${new Date().toISOString().split('T')[0]}T19:59:59.999Z`;
 
-          // Use the actual API route instead of the frontend route
           const recUrl = resolveApiUrl(apiBaseUrl, `/1/account/recordings?plantId=${plantId}&startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&videoToken=true`);
           const recRes = await fetch(recUrl, { headers: getHeaders(activeToken), credentials: 'same-origin' });
+
           if (recRes.ok) {
             const recData = await recRes.json();
             if (recData.data && Array.isArray(recData.data)) {
@@ -232,13 +234,20 @@ export async function fetchPlantData(
                 if (r.cameraPath) validCameraPaths.add(r.cameraPath);
                 if (r.path) validCameraPaths.add(r.path);
                 if (r.name) validCameraPaths.add(r.name);
+
+                if (r._id) {
+                  const key = r.cameraPath || r.path || r.name;
+                  if (key && !cameraThumbMap.has(key)) {
+                    cameraThumbMap.set(key, resolveRecordingThumbnailUrl(apiBaseUrl, r, activeToken));
+                  }
+                }
               });
             }
           }
         } catch (e: any) {
           console.warn('[OmniRecord] Failed to fetch recordings to filter cameras', e);
         }
-        return augmentPlantData(data.data, apiBaseUrl, validCameraPaths);
+        return augmentPlantData(data.data, apiBaseUrl, validCameraPaths, cameraThumbMap);
       }
     }
   } catch (err) {
@@ -282,7 +291,12 @@ export async function fetchPlantData(
   return getMockPlantData(plantId, apiBaseUrl);
 }
 
-function augmentPlantData(rawPlant: PlantData, apiBaseUrl: string, validCameraPaths?: Set<string>): PlantData {
+function augmentPlantData(
+  rawPlant: PlantData,
+  apiBaseUrl: string,
+  validCameraPaths?: Set<string>,
+  cameraThumbMap?: Map<string, string>
+): PlantData {
   // Log the first camera to help debug what properties are available
   if (rawPlant.cameras && rawPlant.cameras.length > 0) {
     console.log('[OmniRecord] First camera data from API:', rawPlant.cameras[0]);
@@ -291,7 +305,8 @@ function augmentPlantData(rawPlant: PlantData, apiBaseUrl: string, validCameraPa
   const mapCamera = (cam: any): Camera => {
     const is360 = cam.name.includes('RTMP') || (cam.relayUri && !cam.relayUri.startsWith('rtsp'));
     const imagePath = cam.originFile || cam.renderFile;
-    const fullImageUrl = imagePath ? `${apiBaseUrl}${imagePath}` : createProceduralPanorama(cam.name, cam.relayUri);
+    const recThumb = cameraThumbMap ? (cameraThumbMap.get(cam.path) || cameraThumbMap.get(cam.name) || cameraThumbMap.get(cam.relayUri)) : undefined;
+    const fullImageUrl = recThumb || (imagePath ? `${apiBaseUrl}${imagePath}` : createProceduralPanorama(cam.name, cam.relayUri));
 
     return {
       ...cam,
@@ -550,6 +565,13 @@ export async function fetchCameraRecordings(
 
       const items = Array.from(itemsMap.values());
 
+      // Populate official Cupola 360 recording thumbnail URL
+      items.forEach((item) => {
+        if (!item.thumbnailUrl) {
+          item.thumbnailUrl = resolveRecordingThumbnailUrl(apiBaseUrl, item, activeToken);
+        }
+      });
+
       // Sort recordings chronologically descending (latest recording first)
       items.sort((a, b) => {
         const timeA = new Date(a.startTime || a.createTime || 0).getTime();
@@ -573,4 +595,26 @@ export async function fetchCameraRecordings(
     events: [],
     neighbors: { previous: null, next: null },
   };
+}
+
+export function resolveRecordingThumbnailUrl(
+  apiBaseUrl: string,
+  rec?: Partial<RecordingItem>,
+  token: string = ''
+): string {
+  if (!rec) return '';
+  if (rec.thumbnailUrl) {
+    if (rec.thumbnailUrl.startsWith('http') || rec.thumbnailUrl.startsWith('data:')) return rec.thumbnailUrl;
+    return resolveApiUrl(apiBaseUrl, rec.thumbnailUrl);
+  }
+  if (rec.thumbnailPath) {
+    return resolveApiUrl(apiBaseUrl, rec.thumbnailPath);
+  }
+  if (rec._id) {
+    const activeToken = token || cachedAuthToken;
+    const cleanToken = activeToken ? `?token=${encodeURIComponent(activeToken)}` : '';
+    const path = `/1/recording/${rec._id}/thumbnail${cleanToken}`;
+    return resolveApiUrl(apiBaseUrl, path);
+  }
+  return '';
 }

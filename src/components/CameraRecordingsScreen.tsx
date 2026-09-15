@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { Camera, RecordingItem } from '../types/camera';
-import { fetchCameraRecordings, extractCameraPath, resolveApiUrl } from '../services/apiService';
+import { fetchCameraRecordings, extractCameraPath, resolveApiUrl, resolveRecordingThumbnailUrl } from '../services/apiService';
 import { ModernCalendarPicker } from './ModernCalendarPicker';
 import {
   ChevronLeft,
@@ -202,11 +202,11 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
       {/* Sub-Header Controls & View Options Toolbar */}
       <div className="bg-white border-b border-gray-200 px-6 py-3">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-5 text-xs text-gray-600">
+          <div className="flex items-center gap-3 text-xs text-gray-600">
             <div className="flex items-center gap-1.5">
               <Film className="w-4 h-4 text-indigo-600" />
               <span className="font-semibold text-gray-900">
-                {hourGroups.length > 0 ? `${hourGroups.length} Continuous Hours Recorded` : 'No Recordings'}
+                {hourGroups.length > 0 ? `${hourGroups.length} Hours` : 'No Recordings'}
               </span>
             </div>
 
@@ -214,7 +214,7 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
 
             <div className="flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-indigo-600" />
-              <span className="font-semibold text-gray-900">{selectedDate} Archive</span>
+              <span className="font-semibold text-gray-900">{selectedDate}</span>
             </div>
           </div>
 
@@ -313,6 +313,7 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
             {hourGroups.map((group) => {
               const totalMin = Math.round(group.totalDurationSec / 60);
               const firstClip = group.clips[0];
+              const thumbUrl = resolveRecordingThumbnailUrl(apiBaseUrl, firstClip, authToken);
               const mediaUrl = getVideoMediaUrl(firstClip);
 
               return (
@@ -323,11 +324,15 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                 >
                   {/* Hour Block Visual Thumbnail Header */}
                   <div className="relative h-44 bg-slate-950 overflow-hidden flex items-center justify-center">
-                    {firstClip?.thumbnailUrl || firstClip?.thumbnailPath ? (
+                    {thumbUrl ? (
                       <img
-                        src={firstClip.thumbnailUrl || resolveApiUrl(apiBaseUrl, firstClip.thumbnailPath!)}
+                        src={thumbUrl}
                         alt="Hour Thumbnail"
                         className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                        onError={(e) => {
+                          // Fallback to video element if image load fails
+                          e.currentTarget.style.display = 'none';
+                        }}
                       />
                     ) : mediaUrl ? (
                       <video
@@ -342,24 +347,19 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                     )}
 
                     {/* Dark Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent flex flex-col justify-between p-3">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent flex flex-col justify-between p-3">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-mono font-bold text-white bg-indigo-600/90 px-2.5 py-0.5 rounded shadow-sm border border-indigo-400">
                           {group.hourLabel}
                         </span>
                         <span className="text-xs font-semibold text-emerald-300 bg-black/60 px-2 py-0.5 rounded border border-emerald-500/40">
-                          {totalMin} min recording
+                          {totalMin} min
                         </span>
                       </div>
 
                       {/* Hover Play Button */}
                       <div className="self-center w-12 h-12 rounded-full bg-indigo-600/90 group-hover:bg-indigo-600 text-white flex items-center justify-center shadow-xl group-hover:scale-110 transition duration-300 border border-indigo-300">
                         <Play className="w-5 h-5 fill-current ml-0.5" />
-                      </div>
-
-                      <div className="text-[11px] font-medium text-gray-300 flex items-center justify-between">
-                        <span>Starts at {group.hourLabel.split(' - ')[0]}</span>
-                        <span className="font-semibold text-indigo-300 group-hover:underline">Play Stream</span>
                       </div>
                     </div>
                   </div>
@@ -386,6 +386,7 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
             {hourGroups.map((group) => {
               const totalMin = Math.round(group.totalDurationSec / 60);
               const firstClip = group.clips[0];
+              const thumbUrl = resolveRecordingThumbnailUrl(apiBaseUrl, firstClip, authToken);
               const mediaUrl = getVideoMediaUrl(firstClip);
 
               return (
@@ -397,9 +398,9 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                   <div className="flex items-center gap-4">
                     {/* Video Thumbnail */}
                     <div className="w-24 h-14 bg-slate-900 rounded-lg overflow-hidden shrink-0 relative flex items-center justify-center border border-gray-200">
-                      {firstClip?.thumbnailUrl || firstClip?.thumbnailPath ? (
+                      {thumbUrl ? (
                         <img
-                          src={firstClip.thumbnailUrl || resolveApiUrl(apiBaseUrl, firstClip.thumbnailPath!)}
+                          src={thumbUrl}
                           alt="Thumbnail"
                           className="w-full h-full object-cover"
                         />
@@ -425,7 +426,7 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                         <span>{group.hourLabel}</span>
                       </div>
                       <div className="text-xs text-emerald-600 font-semibold mt-1">
-                        {totalMin} Minutes Continuous Recording
+                        {totalMin} min
                       </div>
                     </div>
                   </div>
