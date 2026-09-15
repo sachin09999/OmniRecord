@@ -445,19 +445,23 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                       <span className={isDark ? 'text-slate-100' : 'text-gray-900'}>{group.hourLabel}</span>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
                       {mediaUrl && (
                         <button
                           onClick={(e) => handleStartDownload(e, mediaUrl, `OmniRecord_${camera.name}_${group.hourLabel.replace(/:/g, '-')}.mp4`)}
-                          className="p-1.5 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/50 rounded-lg text-xs transition flex items-center gap-1"
+                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 border shadow-sm ${
+                            isDark
+                              ? 'bg-emerald-950/70 hover:bg-emerald-900 text-emerald-300 border-emerald-700/60'
+                              : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
+                          }`}
                           title="Download MP4 Recording"
                         >
-                          <Download className={`w-3.5 h-3.5 ${downloadingItem ? 'animate-bounce text-emerald-400' : ''}`} />
-                          <span className="text-[10px] font-mono font-bold hidden xl:inline">MP4</span>
+                          <Download className={`w-3.5 h-3.5 ${downloadingItem ? 'animate-bounce text-emerald-500' : isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
+                          <span>Download</span>
                         </button>
                       )}
 
-                      <button className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1 shadow-sm">
+                      <button className="px-3.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1 shadow-sm">
                         <Play className="w-3 h-3 fill-current" />
                         <span>Play</span>
                       </button>
@@ -469,7 +473,9 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
           </div>
         ) : (
           /* List View: Continuous Hourly Streams Table */
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm divide-y divide-gray-100">
+          <div className={`border rounded-xl overflow-hidden shadow-sm divide-y ${
+            isDark ? 'bg-slate-900 border-slate-800 divide-slate-800' : 'bg-white border-gray-200 divide-gray-100'
+          }`}>
             {hourGroups.map((group) => {
               const totalMin = Math.round(group.totalDurationSec / 60);
               const firstClip = group.clips[0];
@@ -480,7 +486,9 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                 <div
                   key={group.hourNum}
                   onClick={() => handleSelectRecording(firstClip)}
-                  className="p-4 flex items-center justify-between hover:bg-indigo-50/50 transition cursor-pointer group"
+                  className={`p-4 flex items-center justify-between transition cursor-pointer group ${
+                    isDark ? 'hover:bg-slate-800/60' : 'hover:bg-indigo-50/50'
+                  }`}
                 >
                   <div className="flex items-center gap-4">
                     {/* Video Thumbnail */}
@@ -508,7 +516,7 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                     </div>
 
                     <div>
-                      <div className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                      <div className={`text-sm font-bold flex items-center gap-2 ${isDark ? 'text-slate-100' : 'text-gray-900'}`}>
                         <Clock className="w-4 h-4 text-indigo-500" />
                         <span>{group.hourLabel}</span>
                       </div>
@@ -522,10 +530,14 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                     {mediaUrl && (
                       <button
                         onClick={(e) => handleStartDownload(e, mediaUrl, `OmniRecord_${camera.name}_${group.hourLabel.replace(/:/g, '-')}.mp4`)}
-                        className="px-3 py-1.5 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/50 rounded-lg text-xs transition flex items-center gap-1.5 font-mono font-bold"
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 border shadow-sm ${
+                          isDark
+                            ? 'bg-emerald-950/70 hover:bg-emerald-900 text-emerald-300 border-emerald-700/60'
+                            : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
+                        }`}
                         title="Download MP4 Video Stream"
                       >
-                        <Download className="w-4 h-4" />
+                        <Download className={`w-3.5 h-3.5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
                         <span>Download MP4</span>
                       </button>
                     )}
