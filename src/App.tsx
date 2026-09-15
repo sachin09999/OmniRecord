@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
-import type { PlantData, Camera, StickyNote } from './types/camera';
+import type { PlantData, Camera, StickyNote, RecordingItem } from './types/camera';
 import { fetchPlantData } from './services/apiService';
 import { Header } from './components/Header';
 import { RecordingGrid } from './components/RecordingGrid';
 import { Panorama360Viewer } from './components/Panorama360Viewer';
+import { CameraRecordingsScreen } from './components/CameraRecordingsScreen';
 import { FloorplanMinimap } from './components/FloorplanMinimap';
 import { StickyNotesDrawer } from './components/StickyNotesDrawer';
 import { ApiSettingsModal } from './components/ApiSettingsModal';
@@ -28,7 +29,11 @@ export function App() {
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'map'>('grid');
   const [cameraTypeFilter, setCameraTypeFilter] = useState<'all' | '360' | 'rtsp'>('all');
 
+  // Multi-page navigation state
+  const [pageScreen, setPageScreen] = useState<'grid' | 'recordings' | 'viewer'>('grid');
   const [activeCamera, setActiveCamera] = useState<Camera | null>(null);
+  const [selectedRecording, setSelectedRecording] = useState<RecordingItem | null>(null);
+
   const [isStickyNotesOpen, setIsStickyNotesOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
 
@@ -102,6 +107,55 @@ export function App() {
     );
   }
 
+  // Page 2: Day-Wise Recordings Screen
+  if (pageScreen === 'recordings' && activeCamera) {
+    return (
+      <CameraRecordingsScreen
+        camera={activeCamera}
+        currentDate={currentDate}
+        apiBaseUrl={apiBaseUrl}
+        authToken={authToken}
+        onBackToGrid={() => {
+          setPageScreen('grid');
+          setActiveCamera(null);
+        }}
+        onSelectRecording={(recording) => {
+          setSelectedRecording(recording);
+          setPageScreen('viewer');
+        }}
+      />
+    );
+  }
+
+  // Page 3: 360 Viewer Page
+  if (pageScreen === 'viewer' && activeCamera && plantData) {
+    return (
+      <Panorama360Viewer
+        camera={activeCamera}
+        activeRecording={selectedRecording}
+        allCameras={plantData.cameras}
+        renderFile={plantData.renderFile}
+        onClose={() => {
+          setPageScreen('grid');
+          setActiveCamera(null);
+          setSelectedRecording(null);
+        }}
+        onBackToRecordings={() => {
+          setPageScreen('recordings');
+        }}
+        onSelectCamera={(cam) => {
+          setActiveCamera(cam);
+          setPageScreen('recordings');
+        }}
+        currentDate={currentDate}
+        onOpenStickyNotes={() => setIsStickyNotesOpen(true)}
+        apiBaseUrl={apiBaseUrl}
+        authToken={authToken}
+      />
+    );
+  }
+
+  // Page 1: Main Camera Overview & Grid Page
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 flex flex-col">
       {/* Header */}
@@ -173,14 +227,17 @@ export function App() {
               <h3 className="text-xs font-semibold text-gray-800 flex items-center gap-1.5">
                 <Compass className="w-4 h-4 text-indigo-500" /> 2D Plant Floorplan Overview
               </h3>
-              <span className="text-xs text-gray-500">Click any camera pin to view camera</span>
+              <span className="text-xs text-gray-500">Click any camera pin to view recordings</span>
             </div>
 
             <div className="w-full max-w-4xl h-[480px]">
               <FloorplanMinimap
                 cameras={filteredCameras}
                 currentCamera={filteredCameras[0] || plantData?.cameras[0]}
-                onSelectCamera={(cam) => setActiveCamera(cam)}
+                onSelectCamera={(cam) => {
+                  setActiveCamera(cam);
+                  setPageScreen('recordings');
+                }}
                 renderFile={plantData?.renderFile || ''}
                 currentYaw={180}
                 isExpanded={true}
@@ -190,7 +247,10 @@ export function App() {
         ) : (
           <RecordingGrid
             cameras={filteredCameras}
-            onSelectCamera={(cam) => setActiveCamera(cam)}
+            onSelectCamera={(cam) => {
+              setActiveCamera(cam);
+              setPageScreen('recordings');
+            }}
             currentDate={currentDate}
             selectedSite={selectedSite}
             viewMode={viewMode}
@@ -201,21 +261,6 @@ export function App() {
           />
         )}
       </main>
-
-      {/* 360 VR Player Modal */}
-      {activeCamera && plantData && (
-        <Panorama360Viewer
-          camera={activeCamera}
-          allCameras={plantData.cameras}
-          renderFile={plantData.renderFile}
-          onClose={() => setActiveCamera(null)}
-          onSelectCamera={(cam) => setActiveCamera(cam)}
-          currentDate={currentDate}
-          onOpenStickyNotes={() => setIsStickyNotesOpen(true)}
-          apiBaseUrl={apiBaseUrl}
-          authToken={authToken}
-        />
-      )}
 
       {/* Sticky Notes Drawer */}
       <StickyNotesDrawer
