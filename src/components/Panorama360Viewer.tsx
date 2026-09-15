@@ -5,9 +5,6 @@ import { fetchCameraRecordings, resolveApiUrl } from '../services/apiService';
 import { PlaybackTimeline } from './PlaybackTimeline';
 import {
   ChevronLeft,
-  Crop,
-  Monitor,
-  Layout,
   Camera as CameraIconLucide,
   Video,
   RotateCcw,
@@ -58,7 +55,6 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [recordingSeconds, setRecordingSeconds] = useState<number>(0);
   const [hoveredHotspot, setHoveredHotspot] = useState<CameraIcon | null>(null);
-  const [activeTool, setActiveTool] = useState<'selection' | 'screen' | 'window' | 'default'>('default');
   const [notification, setNotification] = useState<string | null>(null);
 
   const [recordings, setRecordings] = useState<RecordingItem[]>([]);
@@ -72,8 +68,8 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
     setViewProjection(mode);
     if (!cameraRef.current) return;
     if (mode === 'fisheye') {
-      fovRef.current = 145;
-      cameraRef.current.fov = 145;
+      fovRef.current = 110;
+      cameraRef.current.fov = 110;
     } else {
       fovRef.current = 75;
       cameraRef.current.fov = 75;
@@ -525,88 +521,52 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
           {/* Fish View Projection Switcher Button */}
           <button
             onClick={() => setProjectionMode(viewProjection === '360' ? 'fisheye' : '360')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition ${
               viewProjection === 'fisheye'
-                ? 'bg-indigo-600 text-white shadow-md'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                 : 'text-gray-300 hover:bg-[#222733] hover:text-white'
             }`}
             title={viewProjection === 'fisheye' ? "Switch to 360° VR View" : "Switch to Fisheye Lens Projection"}
           >
-            <CircleDot className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{viewProjection === 'fisheye' ? 'Fish View' : '360° View'}</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTool('selection')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
-              activeTool === 'selection'
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'text-gray-300 hover:bg-[#222733] hover:text-white'
-            }`}
-            title="Selection Zoom Tool"
-          >
-            <Crop className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Selection</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTool('screen')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
-              activeTool === 'screen'
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'text-gray-300 hover:bg-[#222733] hover:text-white'
-            }`}
-            title="Screen Fit Mode"
-          >
-            <Monitor className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Screen</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTool('window')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
-              activeTool === 'window'
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'text-gray-300 hover:bg-[#222733] hover:text-white'
-            }`}
-            title="Window Crop Mode"
-          >
-            <Layout className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Window</span>
+            <CircleDot className="w-4 h-4 text-indigo-300" />
+            <span>{viewProjection === 'fisheye' ? 'Fish View' : '360° View'}</span>
           </button>
 
           <div className="h-5 w-px bg-[#2A2F3D] mx-1"></div>
 
           <button
             onClick={handleTakeSnapshot}
-            className="p-2 rounded-lg text-gray-400 hover:bg-[#222733] hover:text-white transition"
+            className="p-2 rounded-lg text-gray-300 hover:bg-[#222733] hover:text-white transition flex items-center gap-1.5 text-xs font-semibold"
             title="Capture 360° Snapshot"
           >
-            <CameraIconLucide className="w-4 h-4" />
+            <CameraIconLucide className="w-4 h-4 text-indigo-400" />
+            <span className="hidden sm:inline">Snapshot</span>
           </button>
 
           <button
             onClick={handleToggleRecord}
-            className={`p-2 rounded-lg transition ${
+            className={`p-2 rounded-lg transition flex items-center gap-1.5 text-xs font-semibold ${
               isRecording
                 ? 'bg-red-600 text-white shadow-md'
-                : 'text-gray-400 hover:bg-[#222733] hover:text-red-400'
+                : 'text-gray-300 hover:bg-[#222733] hover:text-red-400'
             }`}
             title={isRecording ? 'Stop Recording' : 'Start Video Clip Record'}
           >
-            <Video className="w-4 h-4" />
+            <Video className="w-4 h-4 text-red-400" />
+            <span className="hidden sm:inline">{isRecording ? 'Stop Rec' : 'Record'}</span>
           </button>
 
           <button
             onClick={onOpenStickyNotes}
-            className="p-2 rounded-lg text-gray-400 hover:bg-[#222733] hover:text-white transition"
+            className="px-3 py-1.5 rounded-lg text-gray-300 hover:bg-[#222733] hover:text-white transition flex items-center gap-1.5 text-xs font-semibold"
             title="Sticky Notes & Annotations"
           >
-            <FileText className="w-4 h-4" />
+            <FileText className="w-4 h-4 text-amber-400" />
+            <span>Notes & Annotations</span>
           </button>
         </div>
 
-        {/* Floating Bottom-Right LIVE Badge Button (Matching Official Cupola Interface 1:1) */}
+        {/* Floating Bottom-Right Live/Recorded Toggle Badge (Red = LIVE, Blue = RECORDED) */}
         <button
           onClick={() => {
             if (isLiveMode) {
@@ -620,15 +580,15 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
               }
             }
           }}
-          className={`absolute bottom-6 right-6 z-40 px-3 py-1 rounded-full text-[11px] font-extrabold transition-all duration-200 shadow-2xl flex items-center gap-1.5 backdrop-blur-md cursor-pointer ${
+          className={`absolute bottom-6 right-6 z-40 px-3.5 py-1.5 rounded-full text-[11px] font-extrabold transition-all duration-200 shadow-2xl flex items-center gap-1.5 backdrop-blur-md cursor-pointer border ${
             isLiveMode
-              ? 'bg-red-600 text-white ring-2 ring-red-500/80 shadow-red-600/50 animate-pulse'
-              : 'bg-[#181B20]/90 text-gray-300 hover:text-white border border-[#2E3440] hover:bg-[#242832]'
+              ? 'bg-red-600 text-white border-red-400 ring-2 ring-red-500/80 shadow-red-600/50 animate-pulse'
+              : 'bg-[#4F46E5] text-white border-indigo-400 shadow-indigo-600/50 hover:bg-indigo-500'
           }`}
-          title={isLiveMode ? "Live Stream Active (Click to pause Live)" : "Switch to Live Feed"}
+          title={isLiveMode ? "Live Stream Active (Click to switch to Recorded Playback)" : "Recorded Playback Active (Click to switch to Live Stream)"}
         >
-          <span className={`w-2 h-2 rounded-full ${isLiveMode ? 'bg-white animate-ping' : 'bg-red-500'}`} />
-          <span>LIVE</span>
+          <span className={`w-2 h-2 rounded-full ${isLiveMode ? 'bg-white animate-ping' : 'bg-white'}`} />
+          <span>{isLiveMode ? 'LIVE' : 'RECORDED'}</span>
         </button>
       </div>
 
