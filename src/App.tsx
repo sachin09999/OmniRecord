@@ -113,6 +113,7 @@ export function App() {
       <CameraRecordingsScreen
         camera={activeCamera}
         currentDate={currentDate}
+        onDateChange={(newDate) => setCurrentDate(newDate)}
         apiBaseUrl={apiBaseUrl}
         authToken={authToken}
         onBackToGrid={() => {

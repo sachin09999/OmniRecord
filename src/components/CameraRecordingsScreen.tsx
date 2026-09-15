@@ -17,6 +17,7 @@ import {
 interface CameraRecordingsScreenProps {
   camera: Camera;
   currentDate: string;
+  onDateChange?: (date: string) => void;
   apiBaseUrl: string;
   authToken: string;
   onBackToGrid: () => void;
@@ -33,6 +34,7 @@ interface HourGroup {
 export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
   camera,
   currentDate,
+  onDateChange,
   apiBaseUrl,
   authToken,
   onBackToGrid,
@@ -45,6 +47,10 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
   const [viewType, setViewType] = useState<'grouped' | 'all'>('grouped');
 
   const activeCameraPath = extractCameraPath(camera);
+
+  useEffect(() => {
+    setSelectedDate(currentDate);
+  }, [currentDate]);
 
   const loadRecordings = (dateStr: string) => {
     setLoading(true);
@@ -69,6 +75,7 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
   const handleDateChange = (newDate: string) => {
     const formatted = newDate.replace(/-/g, '/');
     setSelectedDate(formatted);
+    if (onDateChange) onDateChange(formatted);
   };
 
   const formattedInputDate = selectedDate.split('/').join('-');

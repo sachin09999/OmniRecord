@@ -386,20 +386,46 @@ export function getMockPlantData(plantId: string = DEFAULT_PLANT_ID, _apiBaseUrl
 }
 
 export function calculateTimeRange(dateStr: string): { startTime: string; endTime: string } {
-  const normalizedDate = dateStr.replace(/\//g, '-');
-  const d = new Date(normalizedDate);
-
-  if (isNaN(d.getTime())) {
+  if (!dateStr) {
+    const today = new Date().toISOString().split('T')[0];
     return {
-      startTime: '2026-09-10T20:00:00.000Z',
-      endTime: '2026-09-11T19:59:59.999Z',
+      startTime: `${today}T00:00:00.000Z`,
+      endTime: `${today}T23:59:59.999Z`,
     };
   }
 
+  const parts = dateStr.split(/[\/\-]/);
+  let year = 2026, month = 9, day = 12;
+
+  if (parts.length === 3) {
+    if (parts[0].length === 4) {
+      // YYYY-MM-DD or YYYY/MM/DD
+      year = parseInt(parts[0], 10);
+      month = parseInt(parts[1], 10);
+      day = parseInt(parts[2], 10);
+    } else if (parts[2].length === 4) {
+      // MM/DD/YYYY
+      month = parseInt(parts[0], 10);
+      day = parseInt(parts[1], 10);
+      year = parseInt(parts[2], 10);
+    }
+  }
+
+  const d = new Date(Date.UTC(year, month - 1, day));
+  const yyyy = isNaN(d.getTime()) ? 2026 : d.getUTCFullYear();
+  const mm = isNaN(d.getTime()) ? '09' : String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dd = isNaN(d.getTime()) ? '12' : String(d.getUTCDate()).padStart(2, '0');
+  const isoCurrentDay = `${yyyy}-${mm}-${dd}`;
+
   const prevDay = new Date(d);
   prevDay.setUTCDate(prevDay.getUTCDate() - 1);
-  const startTime = `${prevDay.toISOString().split('T')[0]}T20:00:00.000Z`;
-  const endTime = `${normalizedDate}T19:59:59.999Z`;
+  const prevYyyy = isNaN(prevDay.getTime()) ? 2026 : prevDay.getUTCFullYear();
+  const prevMm = isNaN(prevDay.getTime()) ? '09' : String(prevDay.getUTCMonth() + 1).padStart(2, '0');
+  const prevDd = isNaN(prevDay.getTime()) ? '11' : String(prevDay.getUTCDate()).padStart(2, '0');
+  const isoPrevDay = `${prevYyyy}-${prevMm}-${prevDd}`;
+
+  const startTime = `${isoPrevDay}T20:00:00.000Z`;
+  const endTime = `${isoCurrentDay}T19:59:59.999Z`;
 
   return { startTime, endTime };
 }
