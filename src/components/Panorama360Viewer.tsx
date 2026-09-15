@@ -485,7 +485,7 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
         )}
 
         {/* Floating Dark Glassmorphism Toolbar */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-[#14171D]/90 border border-[#2A2F3D] rounded-xl p-1.5 shadow-2xl flex items-center gap-1.5 backdrop-blur-lg">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 bg-[#14171D]/90 border border-[#2A2F3D] rounded-xl p-1.5 shadow-2xl flex items-center gap-1.5 backdrop-blur-lg">
           <button
             onClick={() => setActiveTool('selection')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${

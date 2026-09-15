@@ -91,7 +91,7 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
     };
   }, [videoElement, activeRecording, getSecondsFromIso, isDragging]);
 
-  // Center scroll container viewport on current playhead position when zoomed in or when playhead moves
+  // Center scroll container viewport on current playhead position when zoomed in
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container || zoomScale <= 1) return;
@@ -150,7 +150,6 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
       const rawDelta = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
       if (rawDelta === 0) return;
 
-      // Scale time step dynamically according to zoom scale for butter-smooth timing
       const scaleFactor = Math.max(1, 10 / Math.sqrt(zoomScale));
       const direction = rawDelta > 0 ? 1 : -1;
       const stepSecs = Math.max(1, Math.round(Math.abs(rawDelta) * 0.08 * scaleFactor));
@@ -176,7 +175,6 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
     return Math.round(pct * 86400);
   };
 
-  // Pointer Scrubbing Handlers for butter-smooth drag
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     e.currentTarget.setPointerCapture(e.pointerId);
     setIsDragging(true);
@@ -198,7 +196,7 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
       try {
         e.currentTarget.releasePointerCapture(e.pointerId);
       } catch {
-        // Pointer capture release safeguard
+        // Pointer capture safeguard
       }
       setIsDragging(false);
     }
@@ -226,7 +224,6 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
     seekToSeconds(currentSeconds + delta);
   };
 
-  // Format seconds to HH:MM:SS string
   const formatTimeStr = (totalSecs: number): string => {
     const h = String(Math.floor(totalSecs / 3600) % 24).padStart(2, '0');
     const m = String(Math.floor((totalSecs % 3600) / 60)).padStart(2, '0');
@@ -247,7 +244,6 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
     return `${h}:${m}:${s}`;
   }, [currentDate, currentSeconds]);
 
-  // Pre-calculate recording blocks for rendering efficiency
   const recordingBlocks = useMemo(() => {
     return recordings.map((rec, idx) => {
       const startSec = getSecondsFromIso(rec.startTime);
@@ -265,22 +261,23 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
     });
   }, [recordings, activeRecording, getSecondsFromIso]);
 
-  // Pre-calculate ruler tick positions
+  // Major 2-hour interval ruler ticks for maximum readability
   const rulerTicks = useMemo(() => {
     return Array.from({ length: 25 }).map((_, hr) => {
       const hrStr = String(hr % 24).padStart(2, '0');
       const pct = (hr / 24) * 100;
-      return { hr, hrStr, pct };
+      const showLabel = hr % 2 === 0 || zoomScale >= 2;
+      return { hr, hrStr, pct, showLabel };
     });
-  }, []);
+  }, [zoomScale]);
 
   return (
-    <div className="w-full bg-[#0E1017] text-[#E0E6ED] select-none h-[96px] flex items-center px-4 border-t border-[#222736] font-sans z-40 relative shadow-2xl backdrop-blur-lg">
+    <div className="w-full bg-[#0B0D12] text-[#E0E6ED] select-none h-[88px] flex items-center px-4 border-t border-[#1F2432] font-sans z-40 relative shadow-2xl backdrop-blur-xl">
       
       {/* Left Section: Sleek Media Controls */}
-      <div className="flex items-center gap-3 shrink-0 pr-5 border-r border-[#222736]">
+      <div className="flex items-center gap-2 shrink-0 pr-4 border-r border-[#1F2432]">
         <button 
-          className="p-2 text-gray-400 hover:text-white hover:bg-[#1E2332] rounded-lg transition"
+          className="p-1.5 text-gray-400 hover:text-white hover:bg-[#1A1E2B] rounded-lg transition"
           onClick={() => {
             if (onSelectRecording && neighbors?.previous) {
               onSelectRecording(neighbors.previous);
@@ -292,7 +289,7 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
         </button>
 
         <button 
-          className="p-2 text-gray-400 hover:text-white hover:bg-[#1E2332] rounded-lg transition relative" 
+          className="p-1.5 text-gray-400 hover:text-white hover:bg-[#1A1E2B] rounded-lg transition relative" 
           onClick={() => handleSeekDelta(-10)}
           title="Back 10 Seconds"
         >
@@ -302,14 +299,14 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
 
         <button 
           onClick={togglePlay}
-          className="w-11 h-11 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white flex items-center justify-center shadow-lg shadow-indigo-600/40 transition transform active:scale-95"
+          className="w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white flex items-center justify-center shadow-lg shadow-indigo-600/40 transition transform active:scale-95"
           title={isPlaying ? "Pause" : "Play"}
         >
-          {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-0.5" />}
+          {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
         </button>
 
         <button 
-          className="p-2 text-gray-400 hover:text-white hover:bg-[#1E2332] rounded-lg transition relative" 
+          className="p-1.5 text-gray-400 hover:text-white hover:bg-[#1A1E2B] rounded-lg transition relative" 
           onClick={() => handleSeekDelta(10)}
           title="Forward 10 Seconds"
         >
@@ -318,7 +315,7 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
         </button>
 
         <button 
-          className="p-2 text-gray-400 hover:text-white hover:bg-[#1E2332] rounded-lg transition"
+          className="p-1.5 text-gray-400 hover:text-white hover:bg-[#1A1E2B] rounded-lg transition"
           onClick={() => {
             if (onSelectRecording && neighbors?.next) {
               onSelectRecording(neighbors.next);
@@ -330,10 +327,10 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
         </button>
       </div>
 
-      {/* Center Section: Butter-Smooth Horizontally Scrollable & Mouse-Wheel Scrubbable Timeline Track */}
+      {/* Center Section: Beautiful Structured Timeline Track */}
       <div 
         ref={scrollContainerRef}
-        className="flex-1 h-full mx-5 overflow-x-auto overflow-y-hidden scrollbar-none relative"
+        className="flex-1 h-full mx-4 overflow-x-auto overflow-y-visible scrollbar-none relative"
       >
         <div
           ref={trackRef}
@@ -342,122 +339,116 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
           onPointerUp={handlePointerUp}
           onPointerLeave={handlePointerLeave}
           style={{ width: `${zoomScale * 100}%` }}
-          className="relative h-full min-w-full cursor-pointer flex flex-col justify-center group touch-none"
+          className="relative h-full min-w-full cursor-pointer flex flex-col justify-between py-2.5 group touch-none"
         >
-          {/* Main Track Background Bar (Thick 28px Channel) */}
-          <div className="absolute top-1/2 -translate-y-1/2 w-full h-7 bg-[#161922] border border-[#262C3D] rounded-xl overflow-hidden shadow-inner flex items-center">
-            {/* Recording Segments (Glowing Gradient Blocks) */}
-            {recordingBlocks.map((block) => (
-              <div
-                key={block.id}
-                style={{ left: `${block.leftPct}%`, width: `${block.widthPct}%` }}
-                className={`absolute h-full rounded-md transition-all ${
-                  block.isActive
-                    ? 'bg-gradient-to-r from-indigo-500 via-cyan-400 to-indigo-400 border-x border-cyan-300 shadow-md shadow-cyan-500/50 z-10'
-                    : 'bg-gradient-to-r from-indigo-700/80 to-indigo-600/80 border-x border-indigo-400/30 hover:from-indigo-600 hover:to-indigo-500 z-0'
-                }`}
-              />
-            ))}
-          </div>
-
-          {/* Hourly Ruler Markings Layer */}
-          <div className="absolute inset-0 flex justify-between pointer-events-none items-end pb-1.5">
+          {/* Top Layer: Ruler Hour Labels */}
+          <div className="w-full h-4 relative pointer-events-none">
             {rulerTicks.map((tick) => (
               <div
                 key={tick.hr}
                 style={{ left: `${tick.pct}%` }}
-                className="absolute bottom-0 flex flex-col items-center -translate-x-1/2"
+                className="absolute top-0 flex flex-col items-center -translate-x-1/2"
               >
-                <span className="text-[10px] text-gray-500 font-mono font-semibold mb-0.5">
-                  {tick.hrStr}:00
-                </span>
-                <div className="w-[1.5px] h-3 bg-[#333A4D]"></div>
+                {tick.showLabel && (
+                  <span className="text-[10px] text-gray-400 font-mono font-semibold">
+                    {tick.hrStr}:00
+                  </span>
+                )}
+                <div className="w-[1px] h-1.5 bg-[#2E364A] mt-0.5"></div>
               </div>
             ))}
-
-            {/* Sub-hour minor ticks when zoomed */}
-            {zoomScale >= 2 && Array.from({ length: 96 }).map((_, idx) => {
-              if (idx % 4 === 0) return null;
-              const pct = (idx / 96) * 100;
-              return (
-                <div
-                  key={`sub-${idx}`}
-                  style={{ left: `${pct}%` }}
-                  className="absolute bottom-0 flex flex-col items-center -translate-x-1/2"
-                >
-                  <div className="w-[1px] h-2 bg-[#262C3D]"></div>
-                </div>
-              );
-            })}
           </div>
 
-          {/* Hover Preview Line & Timestamp Badge */}
+          {/* Middle Layer: Recording Track Channel Bar */}
+          <div className="relative w-full h-5 bg-[#141722] border border-[#23293A] rounded-full overflow-hidden shadow-inner flex items-center my-auto">
+            {recordingBlocks.map((block) => (
+              <div
+                key={block.id}
+                style={{ left: `${block.leftPct}%`, width: `${block.widthPct}%` }}
+                className="absolute h-full bg-[#4F46E5] opacity-90 transition-all z-0"
+              />
+            ))}
+          </div>
+
+          {/* Bottom Layer: Ruler Tick Marks */}
+          <div className="w-full h-2 relative pointer-events-none flex justify-between items-end">
+            {rulerTicks.map((tick) => (
+              <div
+                key={`b-${tick.hr}`}
+                style={{ left: `${tick.pct}%` }}
+                className="absolute bottom-0 -translate-x-1/2"
+              >
+                <div className="w-[1px] h-2 bg-[#2E364A]"></div>
+              </div>
+            ))}
+          </div>
+
+          {/* Hover Indicator Needle & Tooltip */}
           {hoveredSeconds !== null && !isDragging && (
             <div 
               className="absolute top-0 bottom-0 z-20 pointer-events-none flex flex-col items-center"
               style={{ left: `${(hoveredSeconds / 86400) * 100}%` }}
             >
-              <div className="bg-[#1F2433] text-gray-200 border border-gray-600 text-[10px] font-mono px-2 py-0.5 rounded shadow-md mb-1 -mt-1 font-bold whitespace-nowrap">
+              <div className="bg-[#1A1F2C] text-gray-200 border border-gray-600 text-[10px] font-mono px-2 py-0.5 rounded shadow-lg -mt-1 font-bold whitespace-nowrap">
                 {formatTimeStr(hoveredSeconds)}
               </div>
               <div className="w-[1px] h-full bg-white/40 border-l border-dashed border-white/60"></div>
             </div>
           )}
 
-          {/* Glowing Red Playhead Line & Scrub Handle */}
+          {/* Sleek Red Playhead Needle & Pill Badge */}
           <div 
-            className="absolute top-0 bottom-0 z-30 pointer-events-none flex flex-col items-center transition-all duration-75"
+            className="absolute top-0 bottom-0 z-30 pointer-events-none flex flex-col items-center"
             style={{ left: `${(currentSeconds / 86400) * 100}%` }}
           >
-            {/* Live Playhead Floating Time Badge */}
-            <div className="bg-red-600 text-white text-[10px] font-mono font-extrabold px-2 py-0.5 rounded-full shadow-lg shadow-red-600/50 mb-1 -mt-2.5 tracking-wider border border-red-400">
+            {/* Playhead Time Badge */}
+            <div className="bg-red-600 text-white text-[10px] font-mono font-extrabold px-2 py-0.5 rounded-full shadow-lg shadow-red-600/60 tracking-wider border border-red-400 z-40 whitespace-nowrap">
               {formatTimeStr(currentSeconds)}
             </div>
 
-            {/* Playhead Scrub Needle */}
-            <div className="w-4 h-4 bg-red-500 rounded-full border-2 border-white shadow-[0_0_10px_rgba(239,68,68,1)] -mt-1"></div>
-            <div className="w-[2.5px] h-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.9)]"></div>
+            {/* Red Vertical Needle */}
+            <div className="w-[2px] h-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,1)]"></div>
           </div>
         </div>
       </div>
 
       {/* Right Section: Time Display & Zoom Controls */}
-      <div className="flex items-center gap-4 shrink-0 pl-5 border-l border-[#222736]">
+      <div className="flex items-center gap-4 shrink-0 pl-4 border-l border-[#1F2432]">
         {/* Monospace Timestamp Badge */}
         <div className="flex flex-col items-end">
           <span className="text-[9px] text-indigo-400 uppercase tracking-widest font-bold">Playback Time</span>
-          <span className="font-mono text-sm font-extrabold text-white tracking-wider bg-[#161922] px-3 py-1 rounded-lg border border-[#262C3D] shadow-sm">
+          <span className="font-mono text-sm font-extrabold text-white tracking-wider bg-[#141722] px-3 py-1 rounded-lg border border-[#23293A] shadow-sm">
             {formattedDisplayTime}
           </span>
         </div>
 
         {/* Zoom Controls */}
-        <div className="flex items-center bg-[#161922] border border-[#262C3D] rounded-xl p-1 text-xs">
+        <div className="flex items-center bg-[#141722] border border-[#23293A] rounded-xl p-1 text-xs">
           <button
             onClick={() => setZoomScale(Math.max(1, zoomScale - 1))}
             disabled={zoomScale <= 1}
-            className="p-1.5 text-gray-400 hover:text-white disabled:opacity-30 disabled:hover:text-gray-400 transition rounded-lg"
+            className="p-1 text-gray-400 hover:text-white disabled:opacity-30 disabled:hover:text-gray-400 transition rounded-lg"
             title="Zoom Out Timeline"
           >
-            <ZoomOut className="w-4 h-4" />
+            <ZoomOut className="w-3.5 h-3.5" />
           </button>
 
-          <span className="px-2.5 font-mono text-xs font-extrabold text-indigo-400">
+          <span className="px-2 font-mono text-xs font-extrabold text-indigo-400">
             {zoomScale}x
           </span>
 
           <button
             onClick={() => setZoomScale(Math.min(8, zoomScale + 1))}
             disabled={zoomScale >= 8}
-            className="p-1.5 text-gray-400 hover:text-white disabled:opacity-30 disabled:hover:text-gray-400 transition rounded-lg"
+            className="p-1 text-gray-400 hover:text-white disabled:opacity-30 disabled:hover:text-gray-400 transition rounded-lg"
             title="Zoom In Timeline"
           >
-            <ZoomIn className="w-4 h-4" />
+            <ZoomIn className="w-3.5 h-3.5" />
           </button>
 
           <button
             onClick={() => setZoomScale(1)}
-            className="p-1.5 text-gray-400 hover:text-white transition ml-1 border-l border-[#262C3D] rounded-lg"
+            className="p-1 text-gray-400 hover:text-white transition ml-1 border-l border-[#23293A] rounded-lg"
             title="Fit Full Day (1x)"
           >
             <Maximize2 className="w-3.5 h-3.5" />
