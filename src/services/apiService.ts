@@ -417,13 +417,28 @@ export function extractCameraPath(camOrPath: string | Partial<Camera>): string {
     if (match) return match[0].toUpperCase();
     return camOrPath;
   }
-  if (camOrPath.relayUri && camOrPath.relayUri.startsWith('RTMP_')) return camOrPath.relayUri;
-  if (camOrPath.path && camOrPath.path.startsWith('RTMP_')) return camOrPath.path;
+
+  // 1. Check if name contains RTMP_XX
   if (camOrPath.name) {
     const match = camOrPath.name.match(/RTMP_\d+/i);
     if (match) return match[0].toUpperCase();
   }
-  return camOrPath.relayUri || camOrPath.path || camOrPath.name || 'RTMP_30';
+
+  // 2. Check if path contains RTMP_XX or starts with RTMP_
+  if (camOrPath.path) {
+    const match = camOrPath.path.match(/RTMP_\d+/i);
+    if (match) return match[0].toUpperCase();
+    if (camOrPath.path.startsWith('RTMP_')) return camOrPath.path;
+  }
+
+  // 3. Check relayUri
+  if (camOrPath.relayUri) {
+    const match = camOrPath.relayUri.match(/RTMP_\d+/i);
+    if (match) return match[0].toUpperCase();
+    if (camOrPath.relayUri.startsWith('RTMP_')) return camOrPath.relayUri;
+  }
+
+  return camOrPath.name || camOrPath.path || camOrPath.relayUri || 'RTMP_30';
 }
 
 export async function fetchCameraRecordings(
@@ -489,14 +504,32 @@ export async function fetchCameraRecordings(
 
     if (res.ok) {
       const resp: RecordingsApiResponse = await res.json();
-      const items: RecordingItem[] = [...(resp.data || [])];
+      const rawData = resp.data || [];
 
-      if (resp.neighbors?.previous) {
-        items.unshift(resp.neighbors.previous);
+      // Combine rawData and neighbors using Map to deduplicate by _id
+      const itemsMap = new Map<string, RecordingItem>();
+
+      rawData.forEach((item: RecordingItem) => {
+        if (item && item._id) {
+          itemsMap.set(item._id, item);
+        }
+      });
+
+      if (resp.neighbors?.previous && resp.neighbors.previous._id) {
+        itemsMap.set(resp.neighbors.previous._id, resp.neighbors.previous);
       }
-      if (resp.neighbors?.next) {
-        items.push(resp.neighbors.next);
+      if (resp.neighbors?.next && resp.neighbors.next._id) {
+        itemsMap.set(resp.neighbors.next._id, resp.neighbors.next);
       }
+
+      const items = Array.from(itemsMap.values());
+
+      // Sort recordings chronologically descending (latest recording first)
+      items.sort((a, b) => {
+        const timeA = new Date(a.startTime || a.createTime || 0).getTime();
+        const timeB = new Date(b.startTime || b.createTime || 0).getTime();
+        return timeB - timeA;
+      });
 
       return {
         recordings: items,

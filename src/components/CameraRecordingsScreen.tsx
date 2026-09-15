@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Camera, RecordingItem } from '../types/camera';
-import { fetchCameraRecordings } from '../services/apiService';
+import { fetchCameraRecordings, extractCameraPath } from '../services/apiService';
 import {
   ChevronLeft,
   Calendar,
@@ -35,6 +35,8 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
   const [recordings, setRecordings] = useState<RecordingItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  const activeCameraPath = extractCameraPath(camera);
 
   const loadRecordings = (dateStr: string) => {
     setLoading(true);
@@ -85,8 +87,8 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700 uppercase tracking-wide">
                 Day-Wise Recordings
               </span>
-              <span className="text-xs text-gray-500 font-mono">
-                {camera.relayUri}
+              <span className="text-xs font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
+                {activeCameraPath}
               </span>
             </div>
             <h1 className="text-lg font-bold text-gray-900 mt-0.5 flex items-center gap-2">
@@ -141,8 +143,8 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
             <div className="flex items-center gap-2">
               <HardDrive className="w-4 h-4 text-indigo-500" />
               <span>
-                Camera Type:{' '}
-                <strong className="text-gray-900 font-bold uppercase">{camera.type} 360°</strong>
+                Camera Stream:{' '}
+                <strong className="text-gray-900 font-bold uppercase">{activeCameraPath}</strong>
               </span>
             </div>
           </div>
@@ -186,7 +188,7 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
             <Video className="w-12 h-12 text-gray-300 mb-3" />
             <h3 className="text-base font-bold text-gray-800">No Recordings Found for {selectedDate}</h3>
             <p className="text-xs text-gray-500 max-w-sm mt-1">
-              There are no recorded video clips archived for this camera on the selected date. Please pick another date above.
+              There are no recorded video clips archived for {activeCameraPath} on the selected date. Please pick another date above.
             </p>
           </div>
         ) : (
@@ -209,6 +211,8 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                 const durationRemSec = durationSec % 60;
                 const formattedDuration = `${durationMin > 0 ? `${durationMin}m ` : ''}${durationRemSec}s`;
 
+                const streamKeyDisplay = rec.key || (rec.videoPath ? rec.videoPath.split('/').pop() : rec.cameraPath || rec._id);
+
                 return (
                   <div
                     key={rec._id}
@@ -230,11 +234,13 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                     <div className="my-2 bg-gray-50 rounded-xl p-3 border border-gray-100 space-y-1.5">
                       <div className="text-xs text-gray-700 flex justify-between">
                         <span className="text-gray-500">Camera:</span>
-                        <span className="font-semibold">{camera.name}</span>
+                        <span className="font-semibold">{rec.cameraPath || camera.name}</span>
                       </div>
                       <div className="text-xs text-gray-700 flex justify-between">
                         <span className="text-gray-500">Stream Key:</span>
-                        <span className="font-mono text-[11px] text-gray-600 truncate max-w-[160px]">{rec.key || rec._id}</span>
+                        <span className="font-mono text-[11px] text-gray-600 truncate max-w-[170px]" title={streamKeyDisplay}>
+                          {streamKeyDisplay}
+                        </span>
                       </div>
                     </div>
 
