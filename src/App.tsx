@@ -121,6 +121,19 @@ export function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-5 py-5 flex flex-col gap-4">
+        
+        {/* DEBUG BANNER FOR SCREENSHOT */}
+        <div className="bg-red-900/50 border border-red-500 text-red-200 p-3 rounded-lg text-[10px] font-mono break-all mb-4 shadow-lg shadow-red-900/20">
+          <strong>DEBUG (Please screenshot this block):</strong><br />
+          {plantData?.cameras && plantData.cameras.length > 0 ? (
+            Object.keys(plantData.cameras[0]).filter(k => !['icons', 'x', 'y', 'panoramaUrl', 'thumbnailUrl'].includes(k)).map(key => (
+              <span key={key} className="mr-3">
+                <strong className="text-white">{key}:</strong> {String((plantData.cameras[0] as any)[key])}
+              </span>
+            ))
+          ) : 'No cameras loaded yet.'}
+        </div>
+
         {/* Simple Category Tabs */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <div className="flex items-center gap-2">
