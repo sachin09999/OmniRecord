@@ -173,8 +173,7 @@ export async function fetchPlantData(
   authToken: string = ''
 ): Promise<PlantData> {
   let activeToken = authToken || cachedAuthToken;
-  let tokenParam = activeToken ? encodeURIComponent(activeToken) : 'true';
-  let targetUrl = resolveApiUrl(apiBaseUrl, `/2/account/plant/${plantId}/?videoToken=${tokenParam}`);
+  let targetUrl = resolveApiUrl(apiBaseUrl, `/2/account/plant/${plantId}/?videoToken=true`);
 
   const getHeaders = (tok: string) => {
     const h: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -203,8 +202,7 @@ export async function fetchPlantData(
       const freshToken = await loginToCupola(apiBaseUrl, 'admin', 'qwer1234');
       if (freshToken) {
         activeToken = freshToken;
-        tokenParam = encodeURIComponent(freshToken);
-        targetUrl = resolveApiUrl(apiBaseUrl, `/2/account/plant/${plantId}/?videoToken=${tokenParam}`);
+        targetUrl = resolveApiUrl(apiBaseUrl, `/2/account/plant/${plantId}/?videoToken=true`);
         res = await fetch(targetUrl, {
           method: 'GET',
           headers: getHeaders(activeToken),
@@ -413,10 +411,9 @@ export async function fetchCameraRecordings(
 
   const cleanPath = extractCameraPath(cameraPathInput);
   let activeToken = authToken || cachedAuthToken;
-  let tokenParam = activeToken ? `&videoToken=${encodeURIComponent(activeToken)}` : '';
   let targetUrl = resolveApiUrl(
     apiBaseUrl,
-    `/1/account/recordings?cameraPath=${encodeURIComponent(cleanPath)}&startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&includeNeighbors=true${tokenParam}`
+    `/1/account/recordings?cameraPath=${encodeURIComponent(cleanPath)}&startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&includeNeighbors=true&videoToken=true`
   );
 
   console.log(`[OmniRecord API] Fetching recordings: GET ${targetUrl}`);
@@ -448,10 +445,9 @@ export async function fetchCameraRecordings(
       const freshToken = await loginToCupola(apiBaseUrl, 'admin', 'qwer1234');
       if (freshToken) {
         activeToken = freshToken;
-        tokenParam = `&videoToken=${encodeURIComponent(freshToken)}`;
         targetUrl = resolveApiUrl(
           apiBaseUrl,
-          `/1/account/recordings?cameraPath=${encodeURIComponent(cleanPath)}&startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&includeNeighbors=true${tokenParam}`
+          `/1/account/recordings?cameraPath=${encodeURIComponent(cleanPath)}&startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}&includeNeighbors=true&videoToken=true`
         );
         res = await fetch(targetUrl, {
           method: 'GET',

@@ -32,8 +32,7 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({
     setIsTesting(true);
     setTestResult(null);
 
-    const tokenQuery = token.trim() ? encodeURIComponent(token.trim()) : 'true';
-    const testUrl = resolveApiUrl(url, `/2/account/plant/${pid}/?videoToken=${tokenQuery}`);
+    const testUrl = resolveApiUrl(url, `/2/account/plant/${pid}/?videoToken=true`);
 
     try {
       const controller = new AbortController();
@@ -157,7 +156,7 @@ export const ApiSettingsModal: React.FC<ApiSettingsModalProps> = ({
           <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
             <span className="font-semibold text-slate-400 block mb-1">Constructed Request URL:</span>
             <code className="text-[10px] text-cyan-400 break-all block font-mono">
-              {url}/2/account/plant/{pid}/?videoToken={token.trim() ? encodeURIComponent(token.trim()) : 'true'}
+              {url}/2/account/plant/{pid}/?videoToken=true
             </code>
           </div>
 
