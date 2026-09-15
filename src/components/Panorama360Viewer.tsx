@@ -66,6 +66,8 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
   const [isFetchingRecordings, setIsFetchingRecordings] = useState<boolean>(false);
   const [activeRecording, setActiveRecording] = useState<RecordingItem | null>(null);
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
+  
+  const [viewMode, setViewMode] = useState<'selection' | 'playback'>('selection');
 
   useEffect(() => {
     let isMounted = true;
@@ -395,18 +397,111 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
     }
   };
 
+  if (viewMode === 'selection') {
+    return (
+      <div className="flex flex-col h-full bg-gray-50 rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-3 bg-white border-b border-gray-200">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition"
+              title="Back to Grid"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700 uppercase tracking-wide">
+                  History
+                </span>
+                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                  {recordings.length > 0 ? `GET Recordings OK (${recordings.length})` : 'Fetching...'}
+                </span>
+              </div>
+              <h2 className="text-sm font-bold text-gray-900 mt-1 flex items-center gap-2">
+                {camera.name}
+              </h2>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+             <input 
+                type="date" 
+                value={viewDate.split('/').join('-')}
+                onChange={(e) => setViewDate(e.target.value.replace(/-/g, '/'))}
+                className="text-xs font-semibold p-2 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:border-indigo-500 bg-white"
+              />
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="max-w-4xl mx-auto">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Available Recordings</h3>
+            <p className="text-sm text-gray-500 mb-6">Select a recording segment from {viewDate} to start playback.</p>
+            
+            {isFetchingRecordings ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                 {[1, 2, 3].map(i => (
+                   <div key={i} className="h-24 bg-white border border-gray-200 rounded-xl animate-pulse"></div>
+                 ))}
+              </div>
+            ) : recordings.length === 0 ? (
+              <div className="text-center py-12 bg-white rounded-xl border border-gray-200 border-dashed">
+                 <Video className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                 <h4 className="text-base font-semibold text-gray-800">No Recordings Found</h4>
+                 <p className="text-sm text-gray-500 mt-1">No video streams are available for {viewDate}.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {recordings.map(rec => (
+                  <div
+                    key={rec._id}
+                    onClick={() => {
+                      setActiveRecording(rec);
+                      setViewMode('playback');
+                    }}
+                    className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col justify-between cursor-pointer hover:border-indigo-500 hover:shadow-md transition group"
+                  >
+                     <div className="flex items-center justify-between mb-3">
+                       <span className="text-sm font-bold text-gray-900">{camera.name}</span>
+                       <Video className="w-4 h-4 text-gray-400 group-hover:text-indigo-500 transition" />
+                     </div>
+                     <div className="text-xs text-gray-500 space-y-1">
+                        <p><span className="font-semibold text-gray-700">Start:</span> {new Date(rec.startTime || '').toLocaleString()}</p>
+                        <p><span className="font-semibold text-gray-700">Duration:</span> {Math.round(rec.duration || 60)}s</p>
+                     </div>
+                     <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
+                        <span className="text-xs font-mono text-gray-400">{rec._id}</span>
+                        <span className="text-xs font-bold text-indigo-600 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                          Play <Play className="w-3 h-3" />
+                        </span>
+                     </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="fixed inset-0 z-50 bg-gray-100 flex flex-col overflow-hidden select-none">
+    <div className="flex flex-col h-[calc(100vh-140px)] bg-gray-50 rounded-2xl overflow-hidden border border-gray-200 shadow-sm relative">
       {/* Top Bar */}
       <div className="h-12 bg-white border-b border-gray-200 px-4 flex items-center justify-between z-20">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg bg-gray-100 text-gray-600 hover:text-gray-900 transition border border-gray-300 shadow-sm"
-            title="Back to Dashboard"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => {
+                setActiveRecording(null);
+                setViewMode('selection');
+              }}
+              className="p-1.5 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition"
+              title="Back to Selection"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
 
           <div className="flex items-center gap-2">
             <span className="font-bold text-sm text-gray-900">
@@ -474,44 +569,6 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
         onClick={handleCanvasClick}
       >
         <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
-
-        {!activeRecording && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center bg-gray-900/10 backdrop-blur-sm pointer-events-none">
-            <div className="bg-white border border-gray-200 shadow-2xl rounded-2xl p-6 max-w-sm w-full text-center pointer-events-auto">
-              <Video className="w-10 h-10 text-indigo-500 mx-auto mb-3" />
-              <h3 className="text-lg font-bold text-gray-900 mb-1">Select a Recording</h3>
-              <p className="text-xs text-gray-500 mb-3">Choose a recording from the date list below to start playback for {camera.name}.</p>
-              
-              <div className="mb-4">
-                <input 
-                  type="date" 
-                  value={viewDate.split('/').join('-')}
-                  onChange={(e) => setViewDate(e.target.value.replace(/-/g, '/'))}
-                  className="w-full text-xs font-semibold p-2 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              <div className="space-y-2 max-h-[40vh] overflow-y-auto border border-gray-100 rounded-lg p-2 bg-gray-50">
-                {isFetchingRecordings ? (
-                  <div className="py-4 text-xs text-gray-500 animate-pulse">Loading recordings...</div>
-                ) : recordings.length === 0 ? (
-                  <div className="py-4 text-xs text-gray-500">No recordings available for this date.</div>
-                ) : (
-                  recordings.map(rec => (
-                    <button
-                      key={rec._id}
-                      onClick={() => setActiveRecording(rec)}
-                      className="w-full flex items-center justify-between p-2 rounded-lg bg-white border border-gray-200 hover:border-indigo-400 hover:shadow-sm transition"
-                    >
-                      <span className="text-xs font-mono font-semibold text-gray-700">{rec.key}</span>
-                      <span className="text-[10px] text-gray-400 uppercase">Play <Play className="inline w-3 h-3 ml-0.5" /></span>
-                    </button>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        )}
 
         {hoveredHotspot && (
           <div className="absolute top-14 left-1/2 -translate-x-1/2 z-30 bg-white border border-gray-200 rounded-lg px-3 py-1.5 shadow-xl flex items-center gap-2 pointer-events-none">

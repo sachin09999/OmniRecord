@@ -3,10 +3,12 @@ import type { RecordingItem, Neighbors } from '../types/camera';
 import {
   Play,
   Pause,
-  FastForward,
-  Rewind,
-  Clock,
-  Video
+  SkipBack,
+  SkipForward,
+  RotateCcw,
+  RotateCw,
+  ToggleRight,
+  ToggleLeft
 } from 'lucide-react';
 
 interface PlaybackTimelineProps {
@@ -28,11 +30,14 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
   videoElement
 }) => {
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
-  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
+  const [playbackSpeed] = useState<number>(1);
   const [currentSeconds, setCurrentSeconds] = useState<number>(
     activeRecording && activeRecording.startTime ? getSecondsFromIso(activeRecording.startTime) : 5 * 3600 + 2 * 60 + 2
   );
   
+  const [isGreenToggleOn, setIsGreenToggleOn] = useState<boolean>(true);
+  const [activeTimeSpan, setActiveTimeSpan] = useState<'hr'|'min'|'sec'>('hr');
+
   // Convert ISO string to seconds from start of day
   function getSecondsFromIso(isoStr?: string): number {
     if (!isoStr) return 0;
@@ -61,7 +66,6 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
     videoElement.addEventListener('play', handlePlay);
     videoElement.addEventListener('pause', handlePause);
     
-    // Sync initial state
     setIsPlaying(!videoElement.paused);
     videoElement.playbackRate = playbackSpeed;
 
@@ -72,23 +76,12 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
     };
   }, [videoElement, activeRecording, playbackSpeed]);
 
-  const speeds = [0.5, 1, 2, 4, 8];
-
-  const formatTime = (secs: number) => {
-    const h = Math.floor(secs / 3600);
-    const m = Math.floor((secs % 3600) / 60);
-    const s = Math.floor(secs % 60);
-    const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
-    return `${pad(h)}:${pad(m)}:${pad(s)}`;
-  };
-
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newSecs = parseInt(e.target.value, 10);
     setCurrentSeconds(newSecs);
     if (videoElement && activeRecording && activeRecording.startTime) {
       const startSecs = getSecondsFromIso(activeRecording.startTime);
       const relativeTime = newSecs - startSecs;
-      // Only seek if the time is within the recording bounds (approximate, allow slight overflow)
       if (relativeTime >= 0 && relativeTime <= (activeRecording.duration || 3600)) {
         videoElement.currentTime = relativeTime;
       }
@@ -118,155 +111,173 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
     });
   };
 
-  const handleSpeedChange = (spd: number) => {
-    setPlaybackSpeed(spd);
-    if (videoElement) {
-      videoElement.playbackRate = spd;
-    }
-  };
+
+
+  // Generate ticks for ruler
+  const ticks = [];
+  for (let i = 0; i <= 24; i += 6) {
+    ticks.push(i === 24 ? 0 : i);
+  }
+
+  // Format real date/time for display like "Sep 13 23:17:34"
+  const formattedDisplayTime = React.useMemo(() => {
+    const d = new Date(currentDate);
+    const ms = d.getTime();
+    if (isNaN(ms)) return "--- -- --:--:--";
+    
+    const displayDate = new Date(ms + currentSeconds * 1000);
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const month = months[displayDate.getUTCMonth()];
+    const date = displayDate.getUTCDate();
+    const h = String(displayDate.getUTCHours()).padStart(2, '0');
+    const m = String(displayDate.getUTCMinutes()).padStart(2, '0');
+    const s = String(displayDate.getUTCSeconds()).padStart(2, '0');
+    
+    return `${month} ${date} ${h}:${m}:${s}`;
+  }, [currentDate, currentSeconds]);
 
   return (
-    <div className="w-full px-6 py-4 bg-white text-gray-900 select-none shadow-inner">
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-4 text-xs">
-          <div className="flex items-center gap-3">
-            <span className="text-indigo-700 font-mono font-bold text-sm bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-200 flex items-center gap-2 shadow-sm">
-              <Clock className="w-4 h-4 text-indigo-600" />
-              {formatTime(currentSeconds)}
-            </span>
-            <span className="text-gray-500 font-mono text-xs bg-gray-50 px-2 py-1 rounded-md border border-gray-200">{currentDate}</span>
-
-            {recordings.length > 0 && (
-              <span className="px-2.5 py-1 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1 shadow-sm">
-                <Video className="w-3 h-3 text-emerald-600" />
-                {recordings.length} Segment{recordings.length > 1 ? 's' : ''}
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => handleSeekDelta(-30)}
-              className="p-2 rounded-full text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition border border-transparent hover:border-indigo-100"
-              title="Rewind 30s"
-            >
-              <Rewind className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={togglePlay}
-              className="p-2.5 rounded-full bg-indigo-600 text-white font-bold hover:bg-indigo-500 transition shadow-md shadow-indigo-600/30 active:scale-95"
-              title={isPlaying ? 'Pause Playback' : 'Play Recording'}
-            >
-              {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-0.5" />}
-            </button>
-
-            <button
-              onClick={() => handleSeekDelta(30)}
-              className="p-2 rounded-full text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition border border-transparent hover:border-indigo-100"
-              title="Fast Forward 30s"
-            >
-              <FastForward className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* Previous/Next Recording quick jump buttons */}
-            {neighbors?.next && (
-              <button
-                onClick={() => {
-                  if (onSelectRecording && neighbors.next) {
-                    onSelectRecording(neighbors.next);
-                    if (neighbors.next.startTime) {
-                      setCurrentSeconds(getSecondsFromIso(neighbors.next.startTime));
-                    }
-                  }
-                }}
-                className="px-3 py-1.5 rounded-md text-[10px] font-bold bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 hover:border-indigo-300 transition flex items-center gap-1 shadow-sm"
-                title="Jump to next recording stream"
-              >
-                <span>Next Clip</span>
-              </button>
-            )}
-
-            <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-gray-200 shadow-inner">
-              {speeds.map((spd) => (
-                <button
-                  key={spd}
-                  onClick={() => handleSpeedChange(spd)}
-                  className={`px-2.5 py-1 rounded-md text-[10px] font-bold font-mono transition ${
-                    playbackSpeed === spd
-                      ? 'bg-white text-indigo-700 shadow-sm border border-gray-200'
-                      : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200'
-                  }`}
-                >
-                  {spd}x
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* 24-Hour Interactive Recording Timeline Track */}
-        <div className="relative w-full pt-2 pb-3">
-          <div className="w-full h-4 bg-gray-100 rounded-full relative overflow-hidden border border-gray-200 shadow-inner">
-            {/* Dynamic Recording Bars */}
-            {recordings.map((rec, idx) => {
-              const startSec = getSecondsFromIso(rec.startTime);
-              const endSec = rec.endTime ? getSecondsFromIso(rec.endTime) : startSec + (rec.duration || 300);
-
-              const leftPct = (startSec / 86400) * 100;
-              const widthPct = Math.max(0.6, ((endSec - startSec) / 86400) * 100);
-              
-              const isActive = activeRecording && (activeRecording._id === rec._id);
-
-              return (
-                <div
-                  key={rec._id || idx}
-                  onClick={() => {
-                    setCurrentSeconds(startSec);
-                    if (onSelectRecording) onSelectRecording(rec);
-                  }}
-                  style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
-                  className={`absolute h-full cursor-pointer shadow-sm transition-colors duration-200 ${
-                    isActive 
-                      ? 'bg-indigo-600 border-x border-indigo-700 z-10 scale-y-110' 
-                      : 'bg-emerald-400 hover:bg-indigo-400'
-                  }`}
-                  title={`Recording ${rec.cameraPath || ''}: ${rec.startTime || ''} (${Math.round(rec.duration || 60)}s)`}
-                />
-              );
-            })}
-          </div>
-          
-          {/* Timeline Playhead Indicator */}
-          <div 
-            className="absolute top-1 bottom-3 w-[2px] bg-indigo-600 z-20 pointer-events-none transition-all duration-100"
-            style={{ left: `${(currentSeconds / 86400) * 100}%` }}
+    <div className="w-full bg-[#2A2A2A] text-[#D1D1D1] select-none h-[42px] flex items-center px-3 border-t border-[#1F1F1F] font-sans rounded-b-2xl z-50">
+      
+      {/* Controls Container */}
+      <div className="flex items-center gap-4 shrink-0">
+        
+        {/* Seek Controls */}
+        <div className="flex items-center gap-2 text-[#EAEAEA]">
+          <button 
+            className="hover:text-white transition"
+            onClick={() => {
+               if (onSelectRecording && neighbors?.previous) {
+                 onSelectRecording(neighbors.previous);
+               }
+            }}
           >
-            <div className="absolute -top-1 -translate-x-1/2 w-2 h-2 rounded-full bg-indigo-600 shadow-md"></div>
-          </div>
+            <SkipBack className="w-4 h-4 fill-current" />
+          </button>
+          
+          <button className="hover:text-white transition relative" onClick={() => handleSeekDelta(-10)}>
+            <RotateCcw className="w-5 h-5" />
+            <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold mt-0.5">10</span>
+          </button>
+          
+          <button 
+            onClick={togglePlay}
+            className="w-7 h-7 rounded-full border border-[#D1D1D1] flex items-center justify-center hover:bg-[#3A3A3A] hover:text-white transition"
+          >
+            {isPlaying ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current ml-0.5" />}
+          </button>
+          
+          <button className="hover:text-white transition relative" onClick={() => handleSeekDelta(10)}>
+            <RotateCw className="w-5 h-5" />
+            <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold mt-0.5">10</span>
+          </button>
 
-          <input
+          <button 
+            className="hover:text-white transition"
+            onClick={() => {
+               if (onSelectRecording && neighbors?.next) {
+                 onSelectRecording(neighbors.next);
+               }
+            }}
+          >
+            <SkipForward className="w-4 h-4 fill-current" />
+          </button>
+        </div>
+      </div>
+
+      {/* Timeline Ruler */}
+      <div className="flex-1 relative h-full mx-6">
+         {/* Main Track Background */}
+         <div className="absolute top-1/2 -translate-y-1/2 w-full h-[1px] bg-[#444] z-0"></div>
+         
+         {/* Tick Marks Layer */}
+         <div className="absolute top-1/2 -translate-y-1/2 w-full h-4 z-10 flex justify-between pointer-events-none">
+            {Array.from({ length: 49 }).map((_, i) => {
+               const isMajor = i % 12 === 0;
+               const isMinor = i % 2 === 0 && !isMajor;
+               let label = null;
+               
+               if (isMajor) {
+                 const hr = (i / 2) % 24;
+                 label = hr === 0 || hr === 24 ? '00' : String(hr).padStart(2, '0');
+               }
+
+               return (
+                 <div key={i} className="relative flex flex-col items-center justify-end h-full">
+                    {label && (
+                      <span className="absolute -top-3 text-[9px] text-[#A0A0A0] font-mono">{label}</span>
+                    )}
+                    <div className={`w-[1px] bg-[#666] ${isMajor ? 'h-3' : isMinor ? 'h-2' : 'h-1'}`}></div>
+                 </div>
+               );
+            })}
+         </div>
+
+         {/* Recording Highlights */}
+         {recordings.map((rec, idx) => {
+            const startSec = getSecondsFromIso(rec.startTime);
+            const endSec = rec.endTime ? getSecondsFromIso(rec.endTime) : startSec + (rec.duration || 300);
+            const leftPct = (startSec / 86400) * 100;
+            const widthPct = Math.max(0.6, ((endSec - startSec) / 86400) * 100);
+
+            return (
+              <div
+                key={rec._id || idx}
+                style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
+                className="absolute top-1/2 -translate-y-1/2 h-1 bg-[#4A64B2]/40 border-b border-[#5A7AD6] z-10 pointer-events-none"
+              />
+            );
+         })}
+
+         {/* Playhead Red Dot */}
+         <div 
+           className="absolute top-1/2 -translate-y-1/2 z-30 pointer-events-none"
+           style={{ left: `${(currentSeconds / 86400) * 100}%` }}
+         >
+           <div className="w-2 h-2 bg-red-600 rounded-full -translate-x-1/2 shadow-[0_0_4px_rgba(220,38,38,0.8)]"></div>
+         </div>
+
+         {/* Seek Slider Overlay */}
+         <input
             type="range"
             min={0}
             max={86400}
             step={1}
             value={currentSeconds}
             onChange={handleSliderChange}
-            className="absolute top-2 left-0 w-full h-4 opacity-0 cursor-pointer z-30"
-          />
+            className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer z-40"
+         />
+      </div>
 
-          <div className="flex justify-between text-[10px] font-medium font-mono text-gray-400 mt-2 px-1 select-none">
-            <span>00:00</span>
-            <span>04:00</span>
-            <span>08:00</span>
-            <span>12:00</span>
-            <span>16:00</span>
-            <span>20:00</span>
-            <span>24:00</span>
-          </div>
-        </div>
+      {/* Right Side Status & Toggles */}
+      <div className="flex items-center gap-4 shrink-0 text-[10px]">
+         <div className="font-mono text-[#D1D1D1] min-w-[95px] text-right">
+           {formattedDisplayTime}
+         </div>
+         
+         <div className="flex items-center border border-[#444] rounded text-[#888] overflow-hidden bg-[#222]">
+           <button 
+             onClick={() => setActiveTimeSpan('hr')}
+             className={`px-1.5 py-0.5 hover:bg-[#333] transition ${activeTimeSpan === 'hr' ? 'text-white' : ''}`}
+           >hr</button>
+           <div className="w-[1px] h-3 bg-[#444]"></div>
+           <button 
+             onClick={() => setActiveTimeSpan('min')}
+             className={`px-1.5 py-0.5 hover:bg-[#333] transition ${activeTimeSpan === 'min' ? 'text-white' : ''}`}
+           >min</button>
+           <div className="w-[1px] h-3 bg-[#444]"></div>
+           <button 
+             onClick={() => setActiveTimeSpan('sec')}
+             className={`px-1.5 py-0.5 hover:bg-[#333] transition ${activeTimeSpan === 'sec' ? 'text-white' : ''}`}
+           >sec</button>
+         </div>
+
+         <button 
+           onClick={() => setIsGreenToggleOn(!isGreenToggleOn)}
+           className={`transition-colors ${isGreenToggleOn ? 'text-[#84CC16]' : 'text-[#666]'}`}
+         >
+           {isGreenToggleOn ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
+         </button>
       </div>
     </div>
   );
