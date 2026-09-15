@@ -14,7 +14,8 @@ import {
   FileText,
   CheckCircle,
   Eye,
-  Clock
+  Clock,
+  CircleDot
 } from 'lucide-react';
 
 interface Panorama360ViewerProps {
@@ -64,6 +65,21 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
   const [neighbors, setNeighbors] = useState<Neighbors>({ previous: null, next: null });
   const [selectedRecording, setSelectedRecording] = useState<RecordingItem | null>(activeRecording);
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
+  const [viewProjection, setViewProjection] = useState<'360' | 'fisheye'>('360');
+  const [isLiveMode, setIsLiveMode] = useState<boolean>(!activeRecording);
+
+  const setProjectionMode = (mode: '360' | 'fisheye') => {
+    setViewProjection(mode);
+    if (!cameraRef.current) return;
+    if (mode === 'fisheye') {
+      fovRef.current = 145;
+      cameraRef.current.fov = 145;
+    } else {
+      fovRef.current = 75;
+      cameraRef.current.fov = 75;
+    }
+    cameraRef.current.updateProjectionMatrix();
+  };
 
   const currentHourLabel = useMemo(() => {
     if (!selectedRecording || !selectedRecording.startTime) return null;
@@ -506,6 +522,20 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
 
         {/* Floating Dark Glassmorphism Toolbar */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 bg-[#14171D]/90 border border-[#2A2F3D] rounded-xl p-1.5 shadow-2xl flex items-center gap-1.5 backdrop-blur-lg">
+          {/* Fish View Projection Switcher Button */}
+          <button
+            onClick={() => setProjectionMode(viewProjection === '360' ? 'fisheye' : '360')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
+              viewProjection === 'fisheye'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'text-gray-300 hover:bg-[#222733] hover:text-white'
+            }`}
+            title={viewProjection === 'fisheye' ? "Switch to 360° VR View" : "Switch to Fisheye Lens Projection"}
+          >
+            <CircleDot className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">{viewProjection === 'fisheye' ? 'Fish View' : '360° View'}</span>
+          </button>
+
           <button
             onClick={() => setActiveTool('selection')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
@@ -575,6 +605,31 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
             <FileText className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Floating Bottom-Right LIVE Badge Button (Matching Official Cupola Interface 1:1) */}
+        <button
+          onClick={() => {
+            if (isLiveMode) {
+              setIsLiveMode(false);
+            } else {
+              setIsLiveMode(true);
+              if (neighbors.previous) {
+                setSelectedRecording(neighbors.previous);
+              } else if (recordings.length > 0) {
+                setSelectedRecording(recordings[0]);
+              }
+            }
+          }}
+          className={`absolute bottom-6 right-6 z-40 px-3 py-1 rounded-full text-[11px] font-extrabold transition-all duration-200 shadow-2xl flex items-center gap-1.5 backdrop-blur-md cursor-pointer ${
+            isLiveMode
+              ? 'bg-red-600 text-white ring-2 ring-red-500/80 shadow-red-600/50 animate-pulse'
+              : 'bg-[#181B20]/90 text-gray-300 hover:text-white border border-[#2E3440] hover:bg-[#242832]'
+          }`}
+          title={isLiveMode ? "Live Stream Active (Click to pause Live)" : "Switch to Live Feed"}
+        >
+          <span className={`w-2 h-2 rounded-full ${isLiveMode ? 'bg-white animate-ping' : 'bg-red-500'}`} />
+          <span>LIVE</span>
+        </button>
       </div>
 
       {/* Docked Cupola Ruler Timeline */}
@@ -584,8 +639,12 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
           recordings={recordings}
           neighbors={neighbors}
           apiBaseUrl={apiBaseUrl}
-          onSelectRecording={(rec) => setSelectedRecording(rec)}
-          activeRecording={selectedRecording}
+          authToken={authToken}
+          onSelectRecording={(rec) => {
+            setSelectedRecording(rec);
+            setIsLiveMode(false);
+          }}
+          activeRecording={isLiveMode ? null : selectedRecording}
           videoElement={videoElement}
         />
       </div>
