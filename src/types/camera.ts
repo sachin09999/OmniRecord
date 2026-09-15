@@ -36,6 +36,7 @@ export interface Camera {
   panoramaUrl?: string;
   thumbnailUrl?: string;
   isOnline?: boolean;
+  recording?: boolean;
 }
 
 export interface License {

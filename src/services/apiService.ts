@@ -261,8 +261,10 @@ export async function fetchPlantData(
 }
 
 function augmentPlantData(rawPlant: PlantData, apiBaseUrl: string): PlantData {
-  const augmentedCameras: Camera[] = rawPlant.cameras.map((cam) => {
-    const is360 = cam.name.includes('RTMP') || !cam.relayUri.startsWith('rtsp');
+  const augmentedCameras: Camera[] = rawPlant.cameras
+    .filter((cam: any) => cam.recording === true)
+    .map((cam) => {
+      const is360 = cam.name.includes('RTMP') || !cam.relayUri.startsWith('rtsp');
     const imagePath = (cam as any).originFile || (cam as any).renderFile;
     const fullImageUrl = imagePath ? `${apiBaseUrl}${imagePath}` : createProceduralPanorama(cam.name, cam.relayUri);
 
@@ -315,6 +317,7 @@ export function getMockPlantData(plantId: string = DEFAULT_PLANT_ID, _apiBaseUrl
       panoramaUrl: panoUrl,
       thumbnailUrl: panoUrl,
       isOnline: true,
+      recording: true,
       uri: raw.locationName || name.split('_')[0],
     };
   });
