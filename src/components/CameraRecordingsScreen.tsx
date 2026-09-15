@@ -165,7 +165,9 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
           <div className="flex items-center gap-5 text-xs text-gray-600">
             <div className="flex items-center gap-1.5">
               <Film className="w-4 h-4 text-indigo-600" />
-              <span className="font-semibold text-gray-900">{recordings.length} Recordings</span>
+              <span className="font-semibold text-gray-900">
+                {recordings.length > 0 ? 'Full Day Archive Available' : 'No Recordings Available'}
+              </span>
             </div>
 
             <span className="text-gray-300">•</span>
@@ -267,13 +269,13 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                       <Clock className="w-4 h-4 text-indigo-500" />
                       {group.hourLabel}
                     </span>
-                    <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
-                      {group.clips.length} clips • {totalMin}m
+                    <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
+                      {totalMin} min
                     </span>
                   </div>
 
                   <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-                    <span className="text-xs text-gray-400 font-medium">Continuous Stream</span>
+                    <span className="text-xs text-gray-500 font-medium">Recorded Video</span>
                     <button className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1">
                       <Play className="w-3 h-3 fill-current" />
                       <span>Play</span>
@@ -292,7 +294,6 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                 : 'Recorded Stream';
 
               const durationSec = Math.round(rec.duration || 60);
-              const streamKeyDisplay = rec.key || (rec.videoPath ? rec.videoPath.split('/').pop() : rec.cameraPath || rec._id);
 
               return (
                 <div
@@ -305,15 +306,10 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                       <Clock className="w-3.5 h-3.5 text-indigo-500" />
                       {startTimeStr}
                     </span>
-                    <span className="text-xs text-gray-500 font-mono">{durationSec}s</span>
+                    <span className="text-xs text-indigo-600 font-semibold bg-indigo-50 px-2 py-0.5 rounded">{durationSec}s</span>
                   </div>
 
-                  <div className="text-[11px] font-mono text-gray-400 truncate my-1" title={streamKeyDisplay}>
-                    {streamKeyDisplay}
-                  </div>
-
-                  <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between">
-                    <span className="text-[10px] font-mono text-gray-400">{rec._id.substring(0, 8)}</span>
+                  <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-end">
                     <button className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1">
                       <Play className="w-3 h-3 fill-current" />
                       <span>Play</span>
