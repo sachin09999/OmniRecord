@@ -16,6 +16,7 @@ interface RecordingGridProps {
   viewMode: 'grid' | 'list' | 'map';
   onAddStickyNote: (cam: Camera) => void;
   selectedSite?: string;
+  theme?: 'light' | 'dark';
 }
 
 export const RecordingGrid: React.FC<RecordingGridProps> = ({
@@ -23,10 +24,15 @@ export const RecordingGrid: React.FC<RecordingGridProps> = ({
   onSelectCamera,
   viewMode,
   onAddStickyNote,
+  theme = 'dark',
 }) => {
+  const isDark = theme === 'dark';
+
   if (cameras.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-16 text-center bg-white rounded-2xl border border-gray-200 my-8 shadow-sm">
+      <div className={`flex flex-col items-center justify-center p-16 text-center rounded-2xl border my-8 shadow-sm ${
+        isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-gray-200 text-gray-800'
+      }`}>
         <VideoOff className="w-10 h-10 text-gray-400 mb-3" />
         <h3 className="text-base font-semibold text-gray-800">No Cameras Found</h3>
         <p className="text-xs text-gray-500 max-w-xs mt-1">
@@ -100,11 +106,13 @@ export const RecordingGrid: React.FC<RecordingGridProps> = ({
     <div className="py-2 space-y-6">
       {/* Clean Page Header */}
       <div className="flex items-center justify-between gap-2 pb-1">
-        <h2 className="text-xl font-bold text-gray-900 tracking-tight">Cameras</h2>
+        <h2 className={`text-xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>Cameras</h2>
 
-        <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200/80 px-3 py-1 rounded-lg">
+        <div className={`flex items-center gap-2 px-3 py-1 rounded-lg border ${
+          isDark ? 'bg-emerald-950/60 border-emerald-800/60 text-emerald-300' : 'bg-emerald-50 border-emerald-200/80 text-emerald-800'
+        }`}>
           <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-          <span className="text-xs font-semibold text-emerald-800">{cameras.length} Online</span>
+          <span className="text-xs font-semibold">{cameras.length} Online</span>
         </div>
       </div>
 
@@ -117,17 +125,23 @@ export const RecordingGrid: React.FC<RecordingGridProps> = ({
             <div
               key={cam._id}
               onClick={() => onSelectCamera(cam)}
-              className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col justify-between cursor-pointer group shadow-sm hover:shadow-md transition-shadow hover:border-indigo-400"
+              className={`rounded-xl border p-4 flex flex-col justify-between cursor-pointer group shadow-sm hover:shadow-lg transition-all duration-200 ${
+                isDark
+                  ? 'bg-slate-900/90 border-slate-800 hover:border-indigo-500 text-white'
+                  : 'bg-white border-gray-200 hover:border-indigo-400 text-gray-900'
+              }`}
             >
               {/* Card Top Header: Camera Name */}
               <div className="flex items-center justify-between mb-3 px-1">
-                <h3 className="text-xs font-bold text-gray-900 truncate" title={cam.name}>
+                <h3 className={`text-xs font-bold truncate ${isDark ? 'text-slate-100' : 'text-gray-900'}`} title={cam.name}>
                   {cam.name}
                 </h3>
               </div>
 
               {/* Card Image Frame (Camera Stream Snapshot Thumbnail) */}
-              <div className="relative aspect-video rounded-xl overflow-hidden bg-gray-100 mb-4 border border-gray-200 shadow-inner">
+              <div className={`relative aspect-video rounded-xl overflow-hidden mb-4 border shadow-inner ${
+                isDark ? 'bg-slate-950 border-slate-800' : 'bg-gray-100 border-gray-200'
+              }`}>
                 <img
                   src={cam.thumbnailUrl || cam.panoramaUrl}
                   alt={cam.name}
@@ -135,20 +149,24 @@ export const RecordingGrid: React.FC<RecordingGridProps> = ({
                 />
 
                 {/* Subtle dark gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/40 via-transparent to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-950/60 via-transparent to-transparent"></div>
               </div>
 
               {/* Card Footer Bar */}
-              <div className="flex items-center justify-between gap-2 pt-1 border-t border-gray-100">
+              <div className={`flex items-center justify-between gap-2 pt-2 border-t ${
+                isDark ? 'border-slate-800' : 'border-gray-100'
+              }`}>
                 {/* Left: Location Pin + Location Name */}
-                <div className="flex items-center gap-1.5 text-xs text-gray-600 min-w-0">
-                  <MapPin className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                  <span className="truncate font-medium text-[11px]" title={locationText}>{locationText}</span>
+                <div className="flex items-center gap-1.5 text-xs min-w-0">
+                  <MapPin className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                  <span className={`truncate font-medium text-[11px] ${isDark ? 'text-slate-300' : 'text-gray-600'}`} title={locationText}>{locationText}</span>
                 </div>
 
                 {/* Right: Relay tag + View 360 Button */}
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[10px] font-mono text-gray-600 bg-gray-50 px-2 py-1 rounded-md border border-gray-200">
+                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded-md border ${
+                    isDark ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-gray-50 text-gray-600 border-gray-200'
+                  }`}>
                     {cam.relayUri}
                   </span>
 
@@ -157,7 +175,11 @@ export const RecordingGrid: React.FC<RecordingGridProps> = ({
                       e.stopPropagation();
                       onSelectCamera(cam);
                     }}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-900 font-bold text-xs rounded-xl transition"
+                    className={`flex items-center gap-1 px-3 py-1.5 border font-bold text-xs rounded-xl transition ${
+                      isDark
+                        ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 text-white'
+                        : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-900'
+                    }`}
                   >
                     <span>View 360°</span>
                     <ArrowRight className="w-3.5 h-3.5" />

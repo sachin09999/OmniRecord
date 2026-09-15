@@ -22,6 +22,18 @@ export function App() {
   const [authToken, setAuthToken] = useState<string>('');
   const [isLiveConnected, setIsLiveConnected] = useState<boolean>(false);
 
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem('omni_theme') as 'light' | 'dark') || 'dark';
+  });
+
+  const toggleTheme = () => {
+    setTheme((prev) => {
+      const next = prev === 'light' ? 'dark' : 'light';
+      localStorage.setItem('omni_theme', next);
+      return next;
+    });
+  };
+
   const [currentDate, setCurrentDate] = useState<string>(() => {
     const now = new Date();
     const yyyy = now.getFullYear();
@@ -121,6 +133,8 @@ export function App() {
         onDateChange={(newDate) => setCurrentDate(newDate)}
         apiBaseUrl={apiBaseUrl}
         authToken={authToken}
+        theme={theme}
+        activeRecording={selectedRecording}
         onBackToGrid={() => {
           setPageScreen('grid');
           setActiveCamera(null);
@@ -163,7 +177,9 @@ export function App() {
 
   // Page 1: Main Camera Overview & Grid Page
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 flex flex-col">
+    <div className={`min-h-screen transition-colors duration-200 flex flex-col ${
+      theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-gray-50 text-gray-900'
+    }`}>
       {/* Header */}
       <Header
         currentDate={currentDate}
@@ -177,18 +193,24 @@ export function App() {
         onOpenSettings={() => setIsSettingsOpen(true)}
         liveStatus={isLiveConnected}
         totalCameras={plantData?.cameras.length || 0}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-5 py-5 flex flex-col gap-4">
         {/* Simple Category Tabs */}
-        <div className="flex items-center justify-between border-b border-gray-200 pb-3">
+        <div className={`flex items-center justify-between border-b pb-3 ${
+          theme === 'dark' ? 'border-slate-800' : 'border-gray-200'
+        }`}>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCameraTypeFilter('all')}
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 ${
                 cameraTypeFilter === 'all'
                   ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                  : theme === 'dark'
+                  ? 'text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:bg-slate-800'
                   : 'text-gray-600 hover:text-gray-900 bg-white border border-gray-200 hover:bg-gray-50'
               }`}
             >
@@ -201,6 +223,8 @@ export function App() {
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 ${
                 cameraTypeFilter === '360'
                   ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                  : theme === 'dark'
+                  ? 'text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:bg-slate-800'
                   : 'text-gray-600 hover:text-gray-900 bg-white border border-gray-200 hover:bg-gray-50'
               }`}
             >
@@ -213,6 +237,8 @@ export function App() {
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 ${
                 cameraTypeFilter === 'rtsp'
                   ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                  : theme === 'dark'
+                  ? 'text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:bg-slate-800'
                   : 'text-gray-600 hover:text-gray-900 bg-white border border-gray-200 hover:bg-gray-50'
               }`}
             >
@@ -221,8 +247,8 @@ export function App() {
             </button>
           </div>
 
-          <span className="text-xs text-gray-500 hidden sm:inline">
-            Plant ID: <span className="font-mono text-gray-600">{plantData?._id}</span>
+          <span className={`text-xs hidden sm:inline ${theme === 'dark' ? 'text-slate-500' : 'text-gray-500'}`}>
+            Plant ID: <span className="font-mono">{plantData?._id}</span>
           </span>
         </div>
 
@@ -241,6 +267,7 @@ export function App() {
           currentDate={currentDate}
           selectedSite={selectedSite}
           viewMode={viewMode}
+          theme={theme}
           onAddStickyNote={(cam) => {
             setActiveCamera(cam);
             setIsStickyNotesOpen(true);

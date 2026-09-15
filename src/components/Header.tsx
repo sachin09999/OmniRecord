@@ -6,7 +6,9 @@ import {
   Grid,
   List,
   ChevronDown,
-  ChevronsUpDown
+  ChevronsUpDown,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -21,6 +23,8 @@ interface HeaderProps {
   onOpenSettings: () => void;
   totalCameras: number;
   liveStatus?: boolean;
+  theme?: 'light' | 'dark';
+  onToggleTheme?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -32,6 +36,8 @@ export const Header: React.FC<HeaderProps> = ({
   onSearchChange,
   viewMode,
   onViewModeChange,
+  theme = 'dark',
+  onToggleTheme,
 }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showSiteDropdown, setShowSiteDropdown] = useState(false);
@@ -39,8 +45,12 @@ export const Header: React.FC<HeaderProps> = ({
   const sites = ['UAE-OFFICE', 'UAE-OFFICE Building B', 'Dubai Command Hub', 'Abu Dhabi Substation'];
   const calendarDays = Array.from({ length: 30 }, (_, i) => i + 1);
 
+  const isDark = theme === 'dark';
+
   return (
-    <header className="sticky top-0 z-30 w-full bg-white/95 border-b border-gray-200 px-6 py-4 backdrop-blur-md shadow-sm">
+    <header className={`sticky top-0 z-30 w-full px-6 py-4 backdrop-blur-md border-b transition-colors ${
+      isDark ? 'bg-slate-900/95 border-slate-800 text-white' : 'bg-white/95 border-gray-200 text-gray-900 shadow-sm'
+    }`}>
       <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
         {/* Left Branding */}
         <div className="flex items-center gap-3 w-full lg:w-auto">
@@ -62,10 +72,10 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           <div>
-            <h1 className="text-xl font-black text-gray-900 tracking-tight leading-tight">
+            <h1 className={`text-xl font-black tracking-tight leading-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
               OmniRecord
             </h1>
-            <p className="text-xs text-gray-500 font-medium tracking-wide">
+            <p className={`text-xs font-medium tracking-wide ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
               360° Camera Surveillance
             </p>
           </div>
@@ -77,20 +87,26 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="relative">
             <button
               onClick={() => setShowDatePicker(!showDatePicker)}
-              className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white border border-gray-200 text-xs font-medium text-gray-700 hover:border-indigo-500 hover:bg-gray-50 transition shadow-sm"
+              className={`flex items-center gap-2.5 px-4 py-2 rounded-xl border text-xs font-medium transition shadow-sm ${
+                isDark
+                  ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700 hover:border-slate-600'
+                  : 'bg-white border-gray-200 text-gray-700 hover:border-indigo-500 hover:bg-gray-50'
+              }`}
             >
-              <Calendar className="w-4 h-4 text-gray-500" />
+              <Calendar className="w-4 h-4 text-indigo-400" />
               <span>{currentDate}</span>
               <ChevronsUpDown className="w-3.5 h-3.5 text-gray-400 ml-1" />
             </button>
 
             {showDatePicker && (
-              <div className="absolute left-0 mt-2 w-64 bg-white border border-gray-200 rounded-xl p-3 shadow-xl z-50">
-                <div className="flex items-center justify-between mb-2 pb-2 border-b border-gray-100">
-                  <span className="text-xs font-semibold text-gray-800">September 2026</span>
+              <div className={`absolute left-0 mt-2 w-64 rounded-xl p-3 shadow-xl z-50 border ${
+                isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-gray-200 text-gray-900'
+              }`}>
+                <div className={`flex items-center justify-between mb-2 pb-2 border-b ${isDark ? 'border-slate-800' : 'border-gray-100'}`}>
+                  <span className="text-xs font-semibold">September 2026</span>
                   <button
                     onClick={() => setShowDatePicker(false)}
-                    className="text-xs text-gray-500 hover:text-gray-900"
+                    className="text-xs text-gray-400 hover:text-white"
                   >
                     Close
                   </button>
@@ -113,7 +129,7 @@ export const Header: React.FC<HeaderProps> = ({
                         className={`p-1.5 rounded text-xs transition ${
                           isSelected
                             ? 'bg-indigo-600 font-semibold text-white shadow-sm'
-                            : 'hover:bg-gray-100 text-gray-700'
+                            : isDark ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-gray-100 text-gray-700'
                         }`}
                       >
                         {day}
@@ -129,15 +145,21 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="relative">
             <button
               onClick={() => setShowSiteDropdown(!showSiteDropdown)}
-              className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white border border-gray-200 text-xs font-medium text-gray-700 hover:border-indigo-500 hover:bg-gray-50 transition shadow-sm"
+              className={`flex items-center gap-2.5 px-4 py-2 rounded-xl border text-xs font-medium transition shadow-sm ${
+                isDark
+                  ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700'
+                  : 'bg-white border-gray-200 text-gray-700 hover:border-indigo-500 hover:bg-gray-50'
+              }`}
             >
               <MapPin className="w-4 h-4 text-indigo-500" />
-              <span className="font-semibold text-gray-900">{selectedSite}</span>
+              <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{selectedSite}</span>
               <ChevronDown className="w-3.5 h-3.5 text-gray-400 ml-1" />
             </button>
 
             {showSiteDropdown && (
-              <div className="absolute left-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl py-1 shadow-xl z-50">
+              <div className={`absolute left-0 mt-2 w-48 rounded-xl py-1 shadow-xl z-50 border ${
+                isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-gray-200 text-gray-900'
+              }`}>
                 {sites.map((site) => (
                   <button
                     key={site}
@@ -147,8 +169,8 @@ export const Header: React.FC<HeaderProps> = ({
                     }}
                     className={`w-full px-4 py-2 text-left text-xs transition ${
                       selectedSite === site
-                        ? 'bg-indigo-50 text-indigo-700 font-semibold'
-                        : 'text-gray-700 hover:bg-gray-50'
+                        ? 'bg-indigo-600 text-white font-semibold'
+                        : isDark ? 'text-slate-300 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-50'
                     }`}
                   >
                     {site}
@@ -166,18 +188,39 @@ export const Header: React.FC<HeaderProps> = ({
               placeholder="Search cameras, locations or tags..."
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 text-xs bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-500 transition shadow-sm"
+              className={`w-full pl-10 pr-4 py-2 text-xs border rounded-xl focus:outline-none focus:border-indigo-500 transition shadow-sm ${
+                isDark
+                  ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500'
+                  : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400'
+              }`}
             />
           </div>
         </div>
 
-        {/* Right View Mode Tabs */}
+        {/* Right View Mode Tabs & Theme Switcher */}
         <div className="flex items-center gap-2">
+          {/* Theme Switcher Button */}
+          {onToggleTheme && (
+            <button
+              onClick={onToggleTheme}
+              className={`p-2 rounded-xl transition border flex items-center justify-center ${
+                isDark
+                  ? 'bg-slate-800 text-amber-400 border-slate-700 hover:bg-slate-700'
+                  : 'bg-white text-indigo-600 border-gray-200 hover:bg-gray-50'
+              }`}
+              title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+          )}
+
           <button
             onClick={() => onViewModeChange('grid')}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
               viewMode === 'grid'
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                : isDark
+                ? 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'
                 : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
             }`}
           >
@@ -190,6 +233,8 @@ export const Header: React.FC<HeaderProps> = ({
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
               viewMode === 'list'
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                : isDark
+                ? 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'
                 : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
             }`}
           >

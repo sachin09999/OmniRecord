@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import type { RecordingItem, Neighbors } from '../types/camera';
+import { resolveRecordingThumbnailUrl } from '../services/apiService';
 import {
   Play,
   Pause,
@@ -17,6 +18,7 @@ interface PlaybackTimelineProps {
   recordings?: RecordingItem[];
   neighbors?: Neighbors;
   apiBaseUrl?: string;
+  authToken?: string;
   onSelectRecording?: (rec: RecordingItem) => void;
   activeRecording?: RecordingItem | null;
   videoElement?: HTMLVideoElement | null;
@@ -26,6 +28,8 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
   currentDate,
   recordings = [],
   neighbors,
+  apiBaseUrl = 'http://10.10.12.50:3000',
+  authToken = '',
   onSelectRecording,
   activeRecording,
   videoElement
@@ -261,6 +265,20 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
     });
   }, [recordings, activeRecording, getSecondsFromIso]);
 
+  const hoveredClip = useMemo(() => {
+    if (hoveredSeconds === null || !recordings || recordings.length === 0) return null;
+    return recordings.find((rec) => {
+      const startSecs = getSecondsFromIso(rec.startTime);
+      const endSecs = rec.endTime ? getSecondsFromIso(rec.endTime) : startSecs + (rec.duration || 60);
+      return hoveredSeconds >= startSecs && hoveredSeconds <= endSecs;
+    });
+  }, [hoveredSeconds, recordings, getSecondsFromIso]);
+
+  const hoveredThumbUrl = useMemo(() => {
+    if (!hoveredClip) return null;
+    return resolveRecordingThumbnailUrl(apiBaseUrl, hoveredClip, authToken);
+  }, [hoveredClip, apiBaseUrl, authToken]);
+
   // Major 2-hour interval ruler ticks for maximum readability
   const rulerTicks = useMemo(() => {
     return Array.from({ length: 25 }).map((_, hr) => {
@@ -383,14 +401,30 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
             ))}
           </div>
 
-          {/* Hover Indicator Needle & Tooltip */}
+          {/* Hover Indicator Needle & Mini Video Snapshot Preview Tooltip */}
           {hoveredSeconds !== null && !isDragging && (
             <div 
-              className="absolute top-0 bottom-0 z-20 pointer-events-none flex flex-col items-center"
+              className="absolute top-0 bottom-0 z-50 pointer-events-none flex flex-col items-center"
               style={{ left: `${(hoveredSeconds / 86400) * 100}%` }}
             >
-              <div className="bg-[#1A1F2C] text-gray-200 border border-gray-600 text-[10px] font-mono px-2 py-0.5 rounded shadow-lg -mt-1 font-bold whitespace-nowrap">
-                {formatTimeStr(hoveredSeconds)}
+              <div className="absolute bottom-full mb-2 flex flex-col items-center -translate-x-1/2 left-1/2">
+                <div className="bg-[#0F121C] border border-indigo-500/70 rounded-xl p-1 shadow-2xl flex flex-col items-center backdrop-blur-xl">
+                  {hoveredThumbUrl ? (
+                    <div className="w-32 h-18 rounded-lg overflow-hidden relative bg-black border border-gray-800">
+                      <img
+                        src={hoveredThumbUrl}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                    </div>
+                  ) : null}
+                  <span className="text-[10px] font-mono font-extrabold text-indigo-300 px-2 py-0.5 mt-0.5 tracking-wider">
+                    {formatTimeStr(hoveredSeconds)}
+                  </span>
+                </div>
+                {/* Subtle downward arrow indicator */}
+                <div className="w-2 h-2 bg-[#0F121C] border-r border-b border-indigo-500/70 rotate-45 -mt-1"></div>
               </div>
               <div className="w-[1px] h-full bg-white/40 border-l border-dashed border-white/60"></div>
             </div>

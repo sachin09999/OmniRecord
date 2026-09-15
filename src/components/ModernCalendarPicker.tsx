@@ -11,13 +11,16 @@ interface ModernCalendarPickerProps {
   selectedDate: string; // "YYYY/MM/DD" or "YYYY-MM-DD"
   onSelectDate: (dateStr: string) => void; // Returns "YYYY/MM/DD"
   latestRecordingDate?: string;
+  theme?: 'light' | 'dark';
 }
 
 export const ModernCalendarPicker: React.FC<ModernCalendarPickerProps> = ({
   selectedDate,
   onSelectDate,
-  latestRecordingDate
+  latestRecordingDate,
+  theme = 'dark',
 }) => {
+  const isDark = theme === 'dark';
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const popoverRef = useRef<HTMLDivElement | null>(null);
 
@@ -153,29 +156,37 @@ export const ModernCalendarPicker: React.FC<ModernCalendarPickerProps> = ({
       {/* Modern Trigger Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2.5 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold text-gray-800 shadow-sm transition hover:border-indigo-500 group"
+        className={`flex items-center gap-2.5 border rounded-xl px-4 py-2 text-xs font-bold shadow-sm transition hover:border-indigo-500 group ${
+          isDark
+            ? 'bg-slate-800 border-slate-700 text-slate-100 hover:bg-slate-700'
+            : 'bg-white border-gray-200 text-gray-800 hover:bg-gray-50'
+        }`}
       >
-        <div className="p-1 rounded-lg bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition">
+        <div className={`p-1 rounded-lg transition ${
+          isDark ? 'bg-indigo-950/80 text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white' : 'bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white'
+        }`}>
           <CalendarIcon className="w-4 h-4" />
         </div>
         <span>{formatDisplayString()}</span>
-        <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180 text-indigo-600' : ''}`} />
+        <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180 text-indigo-500' : ''}`} />
       </button>
 
       {/* Modern Popover Card */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-2xl p-5 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-150">
+        <div className={`absolute right-0 top-full mt-2 w-80 rounded-2xl p-5 shadow-2xl z-50 border animate-in fade-in zoom-in-95 duration-150 ${
+          isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-gray-200 text-gray-900'
+        }`}>
           {/* Calendar Month/Year Header */}
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
-            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+          <div className={`flex items-center justify-between mb-4 pb-3 border-b ${isDark ? 'border-slate-800' : 'border-gray-100'}`}>
+            <h3 className="text-sm font-bold flex items-center gap-1.5">
               <span>{monthNames[viewMonth]}</span>
-              <span className="text-indigo-600">{viewYear}</span>
+              <span className="text-indigo-500">{viewYear}</span>
             </h3>
 
             <div className="flex items-center gap-1">
               <button
                 onClick={prevMonth}
-                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 transition"
+                className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-slate-800 text-slate-400 hover:text-white' : 'hover:bg-gray-100 text-gray-600'}`}
                 title="Previous Month"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -183,7 +194,7 @@ export const ModernCalendarPicker: React.FC<ModernCalendarPickerProps> = ({
 
               <button
                 onClick={nextMonth}
-                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 transition"
+                className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-slate-800 text-slate-400 hover:text-white' : 'hover:bg-gray-100 text-gray-600'}`}
                 title="Next Month"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -194,7 +205,7 @@ export const ModernCalendarPicker: React.FC<ModernCalendarPickerProps> = ({
           {/* Days of Week Row */}
           <div className="grid grid-cols-7 gap-1 text-center mb-2">
             {daysOfWeek.map((day, idx) => (
-              <span key={idx} className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+              <span key={idx} className={`text-[11px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
                 {day}
               </span>
             ))}
@@ -221,7 +232,9 @@ export const ModernCalendarPicker: React.FC<ModernCalendarPickerProps> = ({
                     selected
                       ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/40 scale-105 z-10'
                       : today
-                      ? 'border-2 border-indigo-500 text-indigo-700 bg-indigo-50 font-extrabold'
+                      ? 'border-2 border-indigo-500 text-indigo-400 bg-indigo-950/40 font-extrabold'
+                      : isDark
+                      ? 'text-slate-200 hover:bg-slate-800 hover:text-indigo-400'
                       : 'text-gray-700 hover:bg-indigo-50 hover:text-indigo-600'
                   }`}
                 >

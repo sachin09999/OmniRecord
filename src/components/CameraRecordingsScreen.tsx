@@ -25,6 +25,8 @@ interface CameraRecordingsScreenProps {
   authToken: string;
   onBackToGrid: () => void;
   onSelectRecording: (recording: RecordingItem) => void;
+  theme?: 'light' | 'dark';
+  activeRecording?: RecordingItem | null;
 }
 
 interface HourGroup {
@@ -42,7 +44,10 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
   authToken,
   onBackToGrid,
   onSelectRecording,
+  theme = 'dark',
+  activeRecording,
 }) => {
+  const isDark = theme === 'dark';
   const [selectedDate, setSelectedDate] = useState<string>(currentDate);
   const [recordings, setRecordings] = useState<RecordingItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -157,25 +162,35 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 text-gray-900 font-sans">
+    <div className={`flex flex-col min-h-screen font-sans transition-colors ${
+      isDark ? 'bg-slate-950 text-slate-100' : 'bg-gray-50 text-gray-900'
+    }`}>
       {/* Sleek Enterprise Top Bar */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+      <div className={`border-b px-6 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-sm transition-colors ${
+        isDark ? 'bg-slate-900/95 border-slate-800 text-white' : 'bg-white border-gray-200 text-gray-900'
+      }`}>
         <div className="flex items-center gap-4">
           <button
             onClick={onBackToGrid}
-            className="px-3 py-1.5 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition border border-gray-200 flex items-center gap-1 text-xs font-semibold"
+            className={`px-3 py-1.5 rounded-lg transition border flex items-center gap-1 text-xs font-semibold ${
+              isDark
+                ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 border-gray-200'
+            }`}
           >
             <ChevronLeft className="w-4 h-4" />
             <span>Cameras</span>
           </button>
 
-          <div className="h-4 w-px bg-gray-200"></div>
+          <div className={`h-4 w-px ${isDark ? 'bg-slate-800' : 'bg-gray-200'}`}></div>
 
           <div className="flex items-center gap-2.5">
-            <h1 className="text-base font-bold text-gray-900">
+            <h1 className={`text-base font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
               {camera.name}
             </h1>
-            <span className="text-[11px] font-mono font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
+            <span className={`text-[11px] font-mono font-semibold px-2 py-0.5 rounded border ${
+              isDark ? 'text-indigo-300 bg-indigo-950/80 border-indigo-800/60' : 'text-indigo-700 bg-indigo-50 border-indigo-100'
+            }`}>
               {activeCameraPath}
             </span>
           </div>
@@ -187,11 +202,16 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
             selectedDate={selectedDate}
             onSelectDate={handleDateChange}
             latestRecordingDate={latestDate}
+            theme={theme}
           />
 
           <button
             onClick={() => loadRecordings(selectedDate)}
-            className="p-1.5 rounded-lg text-gray-500 hover:text-indigo-600 hover:bg-gray-100 transition border border-gray-200"
+            className={`p-1.5 rounded-lg transition border ${
+              isDark
+                ? 'text-slate-400 hover:text-indigo-400 hover:bg-slate-800 border-slate-700'
+                : 'text-gray-500 hover:text-indigo-600 hover:bg-gray-100 border-gray-200'
+            }`}
             title="Refresh"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-indigo-600' : ''}`} />
@@ -200,21 +220,23 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
       </div>
 
       {/* Sub-Header Controls & View Options Toolbar */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3">
+      <div className={`border-b px-6 py-3 ${
+        isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-gray-200'
+      }`}>
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3 text-xs text-gray-600">
+          <div className={`flex items-center gap-3 text-xs ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
             <div className="flex items-center gap-1.5">
-              <Film className="w-4 h-4 text-indigo-600" />
-              <span className="font-semibold text-gray-900">
+              <Film className="w-4 h-4 text-indigo-500" />
+              <span className={`font-semibold ${isDark ? 'text-slate-200' : 'text-gray-900'}`}>
                 {hourGroups.length > 0 ? `${hourGroups.length} Hours` : 'No Recordings'}
               </span>
             </div>
 
-            <span className="text-gray-300">•</span>
+            <span className={isDark ? 'text-slate-700' : 'text-gray-300'}>•</span>
 
             <div className="flex items-center gap-1.5">
-              <Clock className="w-4 h-4 text-indigo-600" />
-              <span className="font-semibold text-gray-900">{selectedDate}</span>
+              <Clock className="w-4 h-4 text-indigo-500" />
+              <span className={`font-semibold ${isDark ? 'text-slate-200' : 'text-gray-900'}`}>{selectedDate}</span>
             </div>
           </div>
 
@@ -222,22 +244,28 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
             {/* Sort Direction Toggle (Ascending 00:00 first) */}
             <button
               onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-              className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-700 rounded-lg text-xs font-semibold transition flex items-center gap-1.5"
+              className={`px-3 py-1.5 border rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
+                isDark
+                  ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200'
+                  : 'bg-gray-100 hover:bg-gray-200 border-gray-200 text-gray-700'
+              }`}
               title="Toggle Time Order (00:00 First)"
             >
-              <ArrowUpDown className="w-3.5 h-3.5 text-indigo-600" />
+              <ArrowUpDown className="w-3.5 h-3.5 text-indigo-400" />
               <span>{sortOrder === 'asc' ? 'From 00:00 (Top)' : 'From 23:00 (Top)'}</span>
               {sortOrder === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
             </button>
 
             {/* View Mode Toggle: Grid | List */}
-            <div className="flex items-center bg-gray-100 p-1 rounded-lg border border-gray-200 text-xs">
+            <div className={`flex items-center p-1 rounded-lg border text-xs ${
+              isDark ? 'bg-slate-800 border-slate-700' : 'bg-gray-100 border-gray-200'
+            }`}>
               <button
                 onClick={() => setViewType('grid')}
                 className={`px-3 py-1 rounded-md font-semibold transition flex items-center gap-1.5 ${
                   viewType === 'grid'
-                    ? 'bg-white text-indigo-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? isDark ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-indigo-600 shadow-sm'
+                    : isDark ? 'text-slate-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
                 }`}
                 title="Grid View of Hourly Streams"
               >
@@ -315,12 +343,19 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
               const firstClip = group.clips[0];
               const thumbUrl = resolveRecordingThumbnailUrl(apiBaseUrl, firstClip, authToken);
               const mediaUrl = getVideoMediaUrl(firstClip);
+              const isGroupActive = Boolean(activeRecording && group.clips.some(c => c._id === activeRecording._id));
 
               return (
                 <div
                   key={group.hourNum}
                   onClick={() => onSelectRecording(firstClip)}
-                  className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-xl hover:border-indigo-500 transition duration-300 cursor-pointer group flex flex-col justify-between"
+                  className={`rounded-xl overflow-hidden cursor-pointer group flex flex-col justify-between transition-all duration-300 border ${
+                    isGroupActive
+                      ? 'ring-2 ring-indigo-500 border-indigo-500 shadow-xl shadow-indigo-500/20 bg-indigo-950/20 scale-[1.02]'
+                      : isDark
+                      ? 'bg-slate-900 border-slate-800 hover:border-indigo-500 shadow-sm hover:shadow-lg'
+                      : 'bg-white border-gray-200 hover:border-indigo-400 shadow-sm hover:shadow-lg'
+                  }`}
                 >
                   {/* Hour Block Visual Thumbnail Header */}
                   <div className="relative h-44 bg-slate-950 overflow-hidden flex items-center justify-center">
@@ -330,7 +365,6 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                         alt="Hour Thumbnail"
                         className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                         onError={(e) => {
-                          // Fallback to video element if image load fails
                           e.currentTarget.style.display = 'none';
                         }}
                       />
@@ -352,9 +386,17 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                         <span className="text-xs font-mono font-bold text-white bg-indigo-600/90 px-2.5 py-0.5 rounded shadow-sm border border-indigo-400">
                           {group.hourLabel}
                         </span>
-                        <span className="text-xs font-semibold text-emerald-300 bg-black/60 px-2 py-0.5 rounded border border-emerald-500/40">
-                          {totalMin} min
-                        </span>
+
+                        {isGroupActive ? (
+                          <span className="text-[10px] font-extrabold text-white bg-emerald-500 px-2.5 py-0.5 rounded-full shadow-lg shadow-emerald-500/50 flex items-center gap-1.5 animate-pulse">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+                            <span>NOW PLAYING</span>
+                          </span>
+                        ) : (
+                          <span className="text-xs font-semibold text-emerald-300 bg-black/60 px-2 py-0.5 rounded border border-emerald-500/40">
+                            {totalMin} min
+                          </span>
+                        )}
                       </div>
 
                       {/* Hover Play Button */}
@@ -365,10 +407,12 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                   </div>
 
                   {/* Card Bottom Info */}
-                  <div className="p-3.5 bg-white flex items-center justify-between border-t border-gray-100">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-gray-900">
+                  <div className={`p-3.5 flex items-center justify-between border-t ${
+                    isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-100'
+                  }`}>
+                    <div className="flex items-center gap-1.5 text-xs font-bold">
                       <Clock className="w-3.5 h-3.5 text-indigo-500" />
-                      <span>{group.hourLabel}</span>
+                      <span className={isDark ? 'text-slate-100' : 'text-gray-900'}>{group.hourLabel}</span>
                     </div>
 
                     <button className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1 shadow-sm">
