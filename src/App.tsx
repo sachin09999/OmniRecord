@@ -7,8 +7,8 @@ import { Panorama360Viewer } from './components/Panorama360Viewer';
 import { CameraRecordingsScreen } from './components/CameraRecordingsScreen';
 import { StickyNotesDrawer } from './components/StickyNotesDrawer';
 import { ApiSettingsModal } from './components/ApiSettingsModal';
+import { ModernLoadingSpinner } from './components/ModernLoadingSpinner';
 import {
-  Radio,
   Compass,
   Video,
   Layers
@@ -115,11 +115,14 @@ export function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center text-gray-700">
-        <Radio className="w-8 h-8 text-indigo-600 animate-pulse mb-3" />
-        <h2 className="text-sm font-semibold text-gray-700">
-          Loading OmniRecord...
-        </h2>
+      <div className={`min-h-screen flex items-center justify-center transition-colors ${
+        theme === 'dark' ? 'bg-slate-950 text-white' : 'bg-gray-50 text-gray-900'
+      }`}>
+        <ModernLoadingSpinner
+          label="Initializing OmniRecord 360°"
+          sublabel="Authenticating with Cupola Server"
+          isDark={theme === 'dark'}
+        />
       </div>
     );
   }

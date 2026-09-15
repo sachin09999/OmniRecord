@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import * as THREE from 'three';
 import type { Camera, CameraIcon, RecordingItem, Neighbors } from '../types/camera';
 import { fetchCameraRecordings, resolveApiUrl } from '../services/apiService';
@@ -13,7 +13,8 @@ import {
   RotateCcw,
   FileText,
   CheckCircle,
-  Eye
+  Eye,
+  Clock
 } from 'lucide-react';
 
 interface Panorama360ViewerProps {
@@ -63,6 +64,19 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
   const [neighbors, setNeighbors] = useState<Neighbors>({ previous: null, next: null });
   const [selectedRecording, setSelectedRecording] = useState<RecordingItem | null>(activeRecording);
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
+
+  const currentHourLabel = useMemo(() => {
+    if (!selectedRecording || !selectedRecording.startTime) return null;
+    try {
+      const d = new Date(selectedRecording.startTime);
+      const hr = d.getUTCHours();
+      const formattedHr = String(hr).padStart(2, '0');
+      const nextHr = String((hr + 1) % 24).padStart(2, '0');
+      return `${formattedHr}:00 - ${nextHr}:00`;
+    } catch {
+      return null;
+    }
+  }, [selectedRecording]);
 
   useEffect(() => {
     setSelectedRecording(activeRecording);
@@ -426,6 +440,12 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
             <span className="font-mono text-xs font-bold text-indigo-300 bg-indigo-950/80 px-2.5 py-0.5 rounded border border-indigo-800/60">
               {currentDate}
             </span>
+            {currentHourLabel && (
+              <span className="font-mono text-xs font-extrabold text-emerald-300 bg-emerald-950/80 px-2.5 py-0.5 rounded border border-emerald-800/60 flex items-center gap-1.5 shadow-sm">
+                <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                <span>{currentHourLabel}</span>
+              </span>
+            )}
           </div>
         </div>
 

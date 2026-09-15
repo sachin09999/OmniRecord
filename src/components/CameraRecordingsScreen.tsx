@@ -2,6 +2,9 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { Camera, RecordingItem } from '../types/camera';
 import { fetchCameraRecordings, extractCameraPath, resolveApiUrl, resolveRecordingThumbnailUrl } from '../services/apiService';
 import { ModernCalendarPicker } from './ModernCalendarPicker';
+import { ModernLoadingSpinner } from './ModernLoadingSpinner';
+
+const scrollPosCache = new Map<string, number>();
 import {
   ChevronLeft,
   Clock,
@@ -106,6 +109,27 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
   useEffect(() => {
     loadRecordings(selectedDate);
   }, [camera, selectedDate, apiBaseUrl, authToken]);
+
+  // Scroll position preservation handler when selecting a recording
+  const handleSelectRecording = (rec: RecordingItem) => {
+    const key = `${camera._id}_${selectedDate}`;
+    scrollPosCache.set(key, window.scrollY);
+    onSelectRecording(rec);
+  };
+
+  // Restore scroll position after recordings finish loading
+  useEffect(() => {
+    if (!loading && recordings.length > 0) {
+      const key = `${camera._id}_${selectedDate}`;
+      const savedY = scrollPosCache.get(key);
+      if (savedY !== undefined && savedY > 0) {
+        const timerId = setTimeout(() => {
+          window.scrollTo({ top: savedY, behavior: 'instant' });
+        }, 50);
+        return () => clearTimeout(timerId);
+      }
+    }
+  }, [loading, camera._id, selectedDate, recordings.length]);
 
   const handleDateChange = (newDate: string) => {
     userChangedDateRef.current = true;
@@ -304,24 +328,19 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-6">
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div
-                key={i}
-                className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm animate-pulse flex flex-col space-y-3"
-              >
-                <div className="h-40 bg-gray-200 w-full"></div>
-                <div className="p-3 space-y-2">
-                  <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-                  <div className="h-3 bg-gray-100 rounded w-1/3"></div>
-                </div>
-              </div>
-            ))}
+          <div className="py-20 flex flex-col items-center justify-center">
+            <ModernLoadingSpinner
+              label={`Loading ${camera.name} Recordings...`}
+              sublabel={`Fetching Archives for ${selectedDate}`}
+              isDark={isDark}
+            />
           </div>
         ) : error ? (
-          <div className="flex flex-col items-center justify-center p-12 bg-white rounded-xl border border-red-200 text-center my-8 shadow-sm">
+          <div className={`flex flex-col items-center justify-center p-12 rounded-xl border text-center my-8 shadow-sm ${
+            isDark ? 'bg-slate-900 border-red-900/60 text-white' : 'bg-white border-red-200 text-gray-900'
+          }`}>
             <AlertCircle className="w-8 h-8 text-red-500 mb-2" />
-            <h3 className="text-sm font-bold text-gray-900">{error}</h3>
+            <h3 className="text-sm font-bold">{error}</h3>
             <button
               onClick={() => loadRecordings(selectedDate)}
               className="mt-3 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-500 transition"
@@ -330,9 +349,11 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
             </button>
           </div>
         ) : hourGroups.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-16 bg-white rounded-xl border border-gray-200 border-dashed text-center my-8 shadow-sm">
-            <Video className="w-10 h-10 text-gray-300 mb-2" />
-            <h3 className="text-sm font-semibold text-gray-700">No Recordings Found</h3>
+          <div className={`flex flex-col items-center justify-center p-16 rounded-xl border border-dashed text-center my-8 shadow-sm ${
+            isDark ? 'bg-slate-900/60 border-slate-800 text-slate-400' : 'bg-white border-gray-200 text-gray-700'
+          }`}>
+            <Video className="w-10 h-10 text-gray-500 mb-2" />
+            <h3 className="text-sm font-semibold">No Recordings Found</h3>
             <p className="text-xs text-gray-400 mt-1">No video archive available for {selectedDate}.</p>
           </div>
         ) : viewType === 'grid' ? (
@@ -348,7 +369,7 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
               return (
                 <div
                   key={group.hourNum}
-                  onClick={() => onSelectRecording(firstClip)}
+                  onClick={() => handleSelectRecording(firstClip)}
                   className={`rounded-xl overflow-hidden cursor-pointer group flex flex-col justify-between transition-all duration-300 border ${
                     isGroupActive
                       ? 'ring-2 ring-indigo-500 border-indigo-500 shadow-xl shadow-indigo-500/20 bg-indigo-950/20 scale-[1.02]'
@@ -436,7 +457,7 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
               return (
                 <div
                   key={group.hourNum}
-                  onClick={() => onSelectRecording(firstClip)}
+                  onClick={() => handleSelectRecording(firstClip)}
                   className="p-4 flex items-center justify-between hover:bg-indigo-50/50 transition cursor-pointer group"
                 >
                   <div className="flex items-center gap-4">
