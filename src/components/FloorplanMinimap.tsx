@@ -57,11 +57,11 @@ export const FloorplanMinimap: React.FC<FloorplanMinimapProps> = ({
     if (img && img.width > 0) {
       ctx.drawImage(img, 0, 0, w, h);
     } else {
-      ctx.fillStyle = '#0f172a';
+      ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, w, h);
     }
 
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.5)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.fillRect(0, 0, w, h);
 
     const activeX = currentCamera.x * w;
@@ -77,9 +77,9 @@ export const FloorplanMinimap: React.FC<FloorplanMinimapProps> = ({
     const radarRadius = Math.max(w, h) * 0.35;
 
     const grad = ctx.createRadialGradient(0, 0, 5, 0, 0, radarRadius);
-    grad.addColorStop(0, 'rgba(59, 130, 246, 0.6)');
-    grad.addColorStop(0.6, 'rgba(59, 130, 246, 0.2)');
-    grad.addColorStop(1, 'rgba(59, 130, 246, 0)');
+    grad.addColorStop(0, 'rgba(79, 70, 229, 0.6)');
+    grad.addColorStop(0.6, 'rgba(79, 70, 229, 0.2)');
+    grad.addColorStop(1, 'rgba(79, 70, 229, 0)');
 
     ctx.beginPath();
     ctx.moveTo(0, 0);
@@ -88,7 +88,7 @@ export const FloorplanMinimap: React.FC<FloorplanMinimapProps> = ({
     ctx.fillStyle = grad;
     ctx.fill();
 
-    ctx.strokeStyle = 'rgba(59, 130, 246, 0.8)';
+    ctx.strokeStyle = 'rgba(79, 70, 229, 0.8)';
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
@@ -111,14 +111,14 @@ export const FloorplanMinimap: React.FC<FloorplanMinimapProps> = ({
 
       ctx.beginPath();
       ctx.arc(cx, cy, isCurrent ? 5 : 3.5, 0, Math.PI * 2);
-      ctx.fillStyle = isCurrent ? '#10b981' : cam.type === '360' ? '#3b82f6' : '#94a3b8';
+      ctx.fillStyle = isCurrent ? '#10b981' : cam.type === '360' ? '#4f46e5' : '#94a3b8';
       ctx.fill();
-      ctx.strokeStyle = '#020617';
+      ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 1;
       ctx.stroke();
 
       if (isCurrent || w > 300) {
-        ctx.fillStyle = isCurrent ? '#10b981' : '#cbd5e1';
+        ctx.fillStyle = isCurrent ? '#10b981' : '#475569';
         ctx.font = isCurrent ? 'bold 10px "Inter", sans-serif' : '9px "Inter", sans-serif';
         ctx.fillText(cam.name.split('_')[0], cx + 8, cy + 3);
       }
@@ -152,24 +152,44 @@ export const FloorplanMinimap: React.FC<FloorplanMinimapProps> = ({
 
   return (
     <div
-      className={`bg-slate-900 rounded-xl overflow-hidden border border-slate-800 shadow-2xl transition-all duration-200 relative ${
+      className={`bg-white rounded-xl overflow-hidden border border-gray-200 shadow-2xl transition-all duration-200 relative ${
         isExpanded ? 'w-80 h-64' : 'w-56 h-40'
       }`}
+      onClick={onToggleExpand && !isExpanded ? onToggleExpand : undefined}
     >
-      <div className="bg-slate-950 px-2.5 py-1 flex items-center justify-between border-b border-slate-800">
-        <span className="text-[10px] font-semibold text-slate-300 uppercase tracking-wide flex items-center gap-1">
-          <Compass className="w-3 h-3 text-blue-400" /> Floorplan Radar
-        </span>
-        <button
-          onClick={onToggleExpand}
-          className="text-slate-400 hover:text-white transition"
-          title={isExpanded ? 'Collapse Map' : 'Expand Map'}
-        >
-          {isExpanded ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
-        </button>
-      </div>
+      {!isExpanded && (
+        <div className="absolute top-2 left-2 right-2 flex items-center justify-between">
+          <div className="bg-white/90 backdrop-blur px-2 py-1 rounded text-[10px] font-semibold text-gray-700 flex items-center gap-1 border border-gray-200 shadow-sm">
+            <Compass className="w-3 h-3 text-indigo-500" />
+            <span>Map</span>
+          </div>
+          {onToggleExpand && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleExpand();
+              }}
+              className="p-1.5 bg-gray-100 hover:bg-gray-200 rounded text-gray-500 hover:text-gray-900 transition border border-gray-200"
+            >
+              <Maximize2 className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+      )}
 
-      <div className="relative w-full h-[calc(100%-24px)] bg-slate-950">
+      {isExpanded && onToggleExpand && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleExpand();
+          }}
+          className="absolute top-4 right-4 p-2 bg-white hover:bg-gray-50 rounded-lg text-gray-600 hover:text-gray-900 transition shadow-md border border-gray-200"
+        >
+          <Minimize2 className="w-4 h-4" />
+        </button>
+      )}
+
+      <div className="relative w-full h-full bg-white">
         <canvas
           ref={canvasRef}
           width={isExpanded ? 320 : 224}
@@ -178,7 +198,7 @@ export const FloorplanMinimap: React.FC<FloorplanMinimapProps> = ({
           className="w-full h-full cursor-pointer"
         />
 
-        <div className="absolute bottom-1 right-1 bg-slate-950/90 px-1.5 py-0.5 rounded text-[9px] font-mono text-slate-300 border border-slate-800">
+        <div className="absolute bottom-2 right-2 bg-white/90 backdrop-blur px-1.5 py-0.5 rounded text-[9px] font-mono text-gray-600 border border-gray-200 shadow-sm">
           Yaw: {Math.round(currentYaw)}°
         </div>
       </div>

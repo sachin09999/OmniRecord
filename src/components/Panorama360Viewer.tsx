@@ -44,7 +44,15 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
 }) => {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const [currentYaw, setCurrentYaw] = useState<number>(camera.basePosition || 0);
-  const [isAutoRotating, setIsAutoRotating] = useState<boolean>(true);
+  const [isAutoRotating, _setIsAutoRotating] = useState<boolean>(false);
+  const isAutoRotatingRef = useRef<boolean>(false);
+  
+  const setIsAutoRotating = (val: boolean) => {
+    isAutoRotatingRef.current = val;
+    _setIsAutoRotating(val);
+  };
+  
+  const [viewDate, setViewDate] = useState<string>(currentDate);
   const [showTimeline, setShowTimeline] = useState<boolean>(true);
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [recordingSeconds, setRecordingSeconds] = useState<number>(0);
@@ -62,21 +70,19 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
     let isMounted = true;
     setIsFetchingRecordings(true);
 
-    fetchCameraRecordings(apiBaseUrl, camera, currentDate, undefined, undefined, authToken).then((res) => {
+    fetchCameraRecordings(apiBaseUrl, camera, viewDate, undefined, undefined, authToken).then((res) => {
       if (isMounted) {
         setRecordings(res.recordings);
         setNeighbors(res.neighbors);
         setIsFetchingRecordings(false);
-        if (res.recordings.length > 0) {
-          setActiveRecording(res.recordings[0]);
-        }
+        // Do not auto-play. Give user the choice to play from the list.
       }
     });
 
     return () => {
       isMounted = false;
     };
-  }, [camera, currentDate, apiBaseUrl, authToken]);
+  }, [camera, viewDate, apiBaseUrl, authToken]);
 
   useEffect(() => {
     if (!activeRecording || (!activeRecording.videoPath && !activeRecording.videoUrl)) return;
@@ -203,7 +209,7 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
 
-      if (isAutoRotating && !isMouseDownRef.current) {
+      if (isAutoRotatingRef.current && !isMouseDownRef.current) {
         lonRef.current += 0.12 * (camera.rotateSpeed || 1) * (camera.rotateDirection || -1);
       }
 
@@ -384,47 +390,47 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col overflow-hidden select-none">
+    <div className="fixed inset-0 z-50 bg-gray-100 flex flex-col overflow-hidden select-none">
       {/* Top Bar */}
-      <div className="h-12 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between z-20">
+      <div className="h-12 bg-white border-b border-gray-200 px-4 flex items-center justify-between z-20">
         <div className="flex items-center gap-3">
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white transition border border-slate-700"
+            className="p-1.5 rounded-lg bg-gray-100 text-gray-600 hover:text-gray-900 transition border border-gray-300 shadow-sm"
             title="Back to Dashboard"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
 
           <div className="flex items-center gap-2">
-            <span className="font-bold text-sm text-slate-100">
+            <span className="font-bold text-sm text-gray-900">
               Cupola 360 Patrol
             </span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-600 text-white uppercase">
+            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-600 text-white uppercase">
               HISTORY
             </span>
 
             {isFetchingRecordings ? (
-              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse">
+              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 animate-pulse">
                 Fetching Stream API...
               </span>
             ) : (
-              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                 GET Recordings OK ({recordings.length})
               </span>
             )}
           </div>
 
-          <div className="h-4 w-px bg-slate-800 mx-1 hidden sm:block"></div>
+          <div className="h-4 w-px bg-gray-300 mx-1 hidden sm:block"></div>
 
-          <div className="text-xs font-medium text-slate-300 hidden sm:flex items-center gap-2">
-            <span className="text-blue-400">{camera.name}</span>
-            <span className="text-slate-600">•</span>
-            <span className="font-mono text-slate-400">{currentDate}</span>
+          <div className="text-xs font-medium text-gray-600 hidden sm:flex items-center gap-2">
+            <span className="text-indigo-600">{camera.name}</span>
+            <span className="text-gray-400">•</span>
+            <span className="font-mono text-gray-500">{currentDate}</span>
             {activeRecording?.key && (
               <>
-                <span className="text-slate-600">•</span>
-                <span className="font-mono text-cyan-400 text-[11px]">{activeRecording.key}</span>
+                <span className="text-gray-400">•</span>
+                <span className="font-mono text-indigo-500 text-[11px]">{activeRecording.key}</span>
               </>
             )}
           </div>
@@ -435,8 +441,8 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
             onClick={() => setIsAutoRotating(!isAutoRotating)}
             className={`px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 transition ${
               isAutoRotating
-                ? 'bg-blue-600/20 text-blue-400 border border-blue-500/40'
-                : 'bg-slate-800 text-slate-400 border border-slate-700'
+                ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
             }`}
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -444,7 +450,7 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
           </button>
 
           <button
-            className="p-1.5 text-slate-400 hover:text-slate-200 transition"
+            className="p-1.5 text-gray-500 hover:text-gray-900 transition"
             title="Camera Stream Settings"
           >
             <Settings className="w-4 h-4" />
@@ -454,7 +460,7 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
 
       {/* Main 360 VR Canvas Viewer */}
       <div
-        className="relative flex-1 bg-slate-950"
+        className="relative flex-1 bg-gray-100"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -463,22 +469,60 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
       >
         <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
+        {!activeRecording && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-gray-900/10 backdrop-blur-sm pointer-events-none">
+            <div className="bg-white border border-gray-200 shadow-2xl rounded-2xl p-6 max-w-sm w-full text-center pointer-events-auto">
+              <Video className="w-10 h-10 text-indigo-500 mx-auto mb-3" />
+              <h3 className="text-lg font-bold text-gray-900 mb-1">Select a Recording</h3>
+              <p className="text-xs text-gray-500 mb-3">Choose a recording from the date list below to start playback for {camera.name}.</p>
+              
+              <div className="mb-4">
+                <input 
+                  type="date" 
+                  value={viewDate.split('/').join('-')}
+                  onChange={(e) => setViewDate(e.target.value.replace(/-/g, '/'))}
+                  className="w-full text-xs font-semibold p-2 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="space-y-2 max-h-[40vh] overflow-y-auto border border-gray-100 rounded-lg p-2 bg-gray-50">
+                {isFetchingRecordings ? (
+                  <div className="py-4 text-xs text-gray-500 animate-pulse">Loading recordings...</div>
+                ) : recordings.length === 0 ? (
+                  <div className="py-4 text-xs text-gray-500">No recordings available for this date.</div>
+                ) : (
+                  recordings.map(rec => (
+                    <button
+                      key={rec._id}
+                      onClick={() => setActiveRecording(rec)}
+                      className="w-full flex items-center justify-between p-2 rounded-lg bg-white border border-gray-200 hover:border-indigo-400 hover:shadow-sm transition"
+                    >
+                      <span className="text-xs font-mono font-semibold text-gray-700">{rec.key}</span>
+                      <span className="text-[10px] text-gray-400 uppercase">Play <Play className="inline w-3 h-3 ml-0.5" /></span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {hoveredHotspot && (
-          <div className="absolute top-14 left-1/2 -translate-x-1/2 z-30 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 shadow-xl flex items-center gap-2 pointer-events-none">
-            <span className="text-xs text-slate-300 font-medium">Switch to: {hoveredHotspot.cameraPath}</span>
-            <Eye className="w-3.5 h-3.5 text-blue-400" />
+          <div className="absolute top-14 left-1/2 -translate-x-1/2 z-30 bg-white border border-gray-200 rounded-lg px-3 py-1.5 shadow-xl flex items-center gap-2 pointer-events-none">
+            <span className="text-xs text-gray-700 font-medium">Switch to: {hoveredHotspot.cameraPath}</span>
+            <Eye className="w-3.5 h-3.5 text-indigo-500" />
           </div>
         )}
 
         {notification && (
-          <div className="absolute top-14 right-4 z-40 bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-3 py-2 text-xs font-medium shadow-xl flex items-center gap-2">
-            <CheckCircle className="w-4 h-4 text-emerald-400" />
+          <div className="absolute top-14 right-4 z-40 bg-white border border-gray-200 text-gray-800 rounded-lg px-3 py-2 text-xs font-medium shadow-xl flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 text-emerald-500" />
             <span>{notification}</span>
           </div>
         )}
 
         {isRecording && (
-          <div className="absolute top-4 left-4 z-30 bg-red-950/90 text-red-300 border border-red-800 px-3 py-1.5 rounded-full text-xs font-mono font-semibold flex items-center gap-2">
+          <div className="absolute top-4 left-4 z-30 bg-red-50 text-red-700 border border-red-200 px-3 py-1.5 rounded-full text-xs font-mono font-semibold flex items-center gap-2 shadow-sm">
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
             <span>REC 00:{recordingSeconds < 10 ? `0${recordingSeconds}` : recordingSeconds}</span>
           </div>
@@ -497,13 +541,13 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
         </div>
 
         {/* Floating Toolbar */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-slate-900/90 border border-slate-800 rounded-xl p-1.5 shadow-xl flex items-center gap-2">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-white/90 border border-gray-200 rounded-xl p-1.5 shadow-xl flex items-center gap-2 backdrop-blur">
           <button
             onClick={() => setActiveTool('selection')}
             className={`p-2 rounded-lg text-xs font-medium flex items-center gap-1 transition ${
               activeTool === 'selection'
-                ? 'bg-blue-600 text-white font-semibold'
-                : 'text-slate-300 hover:bg-slate-800'
+                ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
             }`}
             title="Selection Zoom Tool"
           >
@@ -515,8 +559,8 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
             onClick={() => setActiveTool('screen')}
             className={`p-2 rounded-lg text-xs font-medium flex items-center gap-1 transition ${
               activeTool === 'screen'
-                ? 'bg-blue-600 text-white font-semibold'
-                : 'text-slate-300 hover:bg-slate-800'
+                ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
             }`}
             title="Screen Fit Mode"
           >
@@ -528,8 +572,8 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
             onClick={() => setActiveTool('window')}
             className={`p-2 rounded-lg text-xs font-medium flex items-center gap-1 transition ${
               activeTool === 'window'
-                ? 'bg-blue-600 text-white font-semibold'
-                : 'text-slate-300 hover:bg-slate-800'
+                ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
             }`}
             title="Window Crop Mode"
           >
@@ -537,11 +581,11 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
             <span className="hidden sm:inline">Window</span>
           </button>
 
-          <div className="h-5 w-px bg-slate-800 mx-0.5"></div>
+          <div className="h-5 w-px bg-gray-200 mx-0.5"></div>
 
           <button
             onClick={handleTakeSnapshot}
-            className="p-2 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition"
+            className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition"
             title="Capture 360° Snapshot"
           >
             <CameraIconLucide className="w-4 h-4" />
@@ -551,8 +595,8 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
             onClick={handleToggleRecord}
             className={`p-2 rounded-lg transition ${
               isRecording
-                ? 'bg-red-600 text-white'
-                : 'text-slate-300 hover:bg-slate-800 hover:text-red-400'
+                ? 'bg-red-600 text-white shadow-sm'
+                : 'text-gray-500 hover:bg-gray-100 hover:text-red-500'
             }`}
             title={isRecording ? 'Stop Recording' : 'Start Video Clip Record'}
           >
@@ -561,10 +605,10 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
 
           <button
             onClick={() => setShowTimeline(!showTimeline)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider flex items-center gap-1.5 transition ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider flex items-center gap-1.5 transition shadow-sm ${
               showTimeline
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
             }`}
           >
             <Play className="w-3 h-3 fill-current" />
@@ -573,7 +617,7 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
 
           <button
             onClick={onOpenStickyNotes}
-            className="p-2 rounded-lg text-slate-300 hover:bg-slate-800 transition"
+            className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition"
             title="Sticky Notes & Patrol Annotations"
           >
             <FileText className="w-4 h-4" />
@@ -582,13 +626,14 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
       </div>
 
       {showTimeline && (
-        <div className="relative z-20 border-t border-slate-800 bg-slate-900">
+        <div className="relative z-20 border-t border-gray-200 bg-white">
           <PlaybackTimeline
-            currentDate={currentDate}
+            currentDate={viewDate}
             recordings={recordings}
             neighbors={neighbors}
             apiBaseUrl={apiBaseUrl}
             onSelectRecording={(rec) => setActiveRecording(rec)}
+            activeRecording={activeRecording}
           />
         </div>
       )}

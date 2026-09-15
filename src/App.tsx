@@ -93,9 +93,9 @@ export function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0b0f19] flex flex-col items-center justify-center text-slate-200">
-        <Radio className="w-8 h-8 text-blue-500 animate-pulse mb-3" />
-        <h2 className="text-sm font-semibold text-slate-200">
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center text-gray-700">
+        <Radio className="w-8 h-8 text-indigo-600 animate-pulse mb-3" />
+        <h2 className="text-sm font-semibold text-gray-700">
           Loading OmniRecord...
         </h2>
       </div>
@@ -103,7 +103,7 @@ export function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-gray-50 text-gray-900 flex flex-col">
       {/* Header */}
       <Header
         currentDate={currentDate}
@@ -122,14 +122,14 @@ export function App() {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-5 py-5 flex flex-col gap-4">
         {/* Simple Category Tabs */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="flex items-center justify-between border-b border-gray-200 pb-3">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCameraTypeFilter('all')}
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 ${
                 cameraTypeFilter === 'all'
-                  ? 'bg-blue-600 text-white font-semibold'
-                  : 'text-slate-400 hover:text-white bg-slate-900 border border-slate-800'
+                  ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900 bg-white border border-gray-200 hover:bg-gray-50'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
@@ -140,8 +140,8 @@ export function App() {
               onClick={() => setCameraTypeFilter('360')}
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 ${
                 cameraTypeFilter === '360'
-                  ? 'bg-blue-600 text-white font-semibold'
-                  : 'text-slate-400 hover:text-white bg-slate-900 border border-slate-800'
+                  ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900 bg-white border border-gray-200 hover:bg-gray-50'
               }`}
             >
               <Compass className="w-3.5 h-3.5" />
@@ -152,8 +152,8 @@ export function App() {
               onClick={() => setCameraTypeFilter('rtsp')}
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 ${
                 cameraTypeFilter === 'rtsp'
-                  ? 'bg-blue-600 text-white font-semibold'
-                  : 'text-slate-400 hover:text-white bg-slate-900 border border-slate-800'
+                  ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900 bg-white border border-gray-200 hover:bg-gray-50'
               }`}
             >
               <Video className="w-3.5 h-3.5" />
@@ -161,19 +161,19 @@ export function App() {
             </button>
           </div>
 
-          <span className="text-xs text-slate-400 hidden sm:inline">
-            Plant ID: <span className="font-mono text-slate-300">{plantData?._id}</span>
+          <span className="text-xs text-gray-500 hidden sm:inline">
+            Plant ID: <span className="font-mono text-gray-600">{plantData?._id}</span>
           </span>
         </div>
 
         {/* View Mode Content */}
         {viewMode === 'map' ? (
-          <div className="bg-slate-900/80 p-5 rounded-xl border border-slate-800 flex flex-col items-center gap-3">
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center gap-3">
             <div className="flex items-center justify-between w-full">
-              <h3 className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-                <Compass className="w-4 h-4 text-blue-400" /> 2D Plant Floorplan Overview
+              <h3 className="text-xs font-semibold text-gray-800 flex items-center gap-1.5">
+                <Compass className="w-4 h-4 text-indigo-500" /> 2D Plant Floorplan Overview
               </h3>
-              <span className="text-xs text-slate-400">Click any camera pin to view camera</span>
+              <span className="text-xs text-gray-500">Click any camera pin to view camera</span>
             </div>
 
             <div className="w-full max-w-4xl h-[480px]">
