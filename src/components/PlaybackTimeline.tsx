@@ -79,7 +79,24 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newSecs = parseInt(e.target.value, 10);
     setCurrentSeconds(newSecs);
-    if (videoElement && activeRecording && activeRecording.startTime) {
+
+    if (recordings && recordings.length > 0) {
+      // Find recording clip that covers newSecs
+      const matchingRec = recordings.find((rec) => {
+        const startSecs = getSecondsFromIso(rec.startTime);
+        const endSecs = rec.endTime ? getSecondsFromIso(rec.endTime) : startSecs + (rec.duration || 60);
+        return newSecs >= startSecs && newSecs <= endSecs;
+      });
+
+      if (matchingRec) {
+        if (!activeRecording || matchingRec._id !== activeRecording._id) {
+          if (onSelectRecording) onSelectRecording(matchingRec);
+        } else if (videoElement && activeRecording && activeRecording.startTime) {
+          const startSecs = getSecondsFromIso(activeRecording.startTime);
+          videoElement.currentTime = Math.max(0, newSecs - startSecs);
+        }
+      }
+    } else if (videoElement && activeRecording && activeRecording.startTime) {
       const startSecs = getSecondsFromIso(activeRecording.startTime);
       const relativeTime = newSecs - startSecs;
       if (relativeTime >= 0 && relativeTime <= (activeRecording.duration || 3600)) {

@@ -102,10 +102,24 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
     const video = document.createElement('video');
     video.src = fullVideoUrl;
     video.crossOrigin = 'anonymous';
-    video.loop = true;
+    video.loop = false; // Disable loop to allow continuous playback of recording sequence
     video.muted = true;
     video.playsInline = true;
-    
+
+    // Auto advance to next recording clip when current clip ends
+    const handleEnded = () => {
+      console.log('[OmniRecord Stream] Video clip ended, advancing to next continuous recording clip...');
+      if (recordings && recordings.length > 0 && selectedRecording) {
+        const currentIndex = recordings.findIndex(r => r._id === selectedRecording._id);
+        // Recordings are sorted descending by time (latest first), so chronological next is index - 1
+        if (currentIndex > 0) {
+          setSelectedRecording(recordings[currentIndex - 1]);
+        }
+      }
+    };
+
+    video.addEventListener('ended', handleEnded);
+
     // Set video state so child components can control it
     setVideoElement(video);
     
@@ -120,12 +134,13 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
     }
 
     return () => {
+      video.removeEventListener('ended', handleEnded);
       setVideoElement(null);
       video.pause();
       video.removeAttribute('src');
       video.load();
     };
-  }, [selectedRecording, apiBaseUrl]);
+  }, [selectedRecording, recordings, apiBaseUrl]);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);

@@ -542,33 +542,8 @@ export async function fetchCameraRecordings(
     console.warn(`[OmniRecord] Recordings API unreachable (${targetUrl}):`, err);
   }
 
-  // Fallback data if API offline / empty response (no fake videoPath to avoid 401 errors)
-  const fallbackRecordings: RecordingItem[] = [
-    {
-      _id: 'rec-fallback-1',
-      cameraPath: cleanPath,
-      startTime: `${dateStr.replace(/\//g, '-')}T04:00:00.000Z`,
-      endTime: `${dateStr.replace(/\//g, '-')}T07:30:00.000Z`,
-      duration: 12600,
-    },
-    {
-      _id: 'rec-fallback-2',
-      cameraPath: cleanPath,
-      startTime: `${dateStr.replace(/\//g, '-')}T09:00:00.000Z`,
-      endTime: `${dateStr.replace(/\//g, '-')}T12:45:00.000Z`,
-      duration: 13500,
-    },
-    {
-      _id: 'rec-fallback-3',
-      cameraPath: cleanPath,
-      startTime: `${dateStr.replace(/\//g, '-')}T14:15:00.000Z`,
-      endTime: `${dateStr.replace(/\//g, '-')}T18:00:00.000Z`,
-      duration: 13500,
-    },
-  ];
-
   return {
-    recordings: fallbackRecordings,
+    recordings: [],
     events: [],
     neighbors: { previous: null, next: null },
   };
