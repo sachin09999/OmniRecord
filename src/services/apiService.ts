@@ -214,7 +214,25 @@ export async function fetchPlantData(
     if (res.ok) {
       const data: ApiResponse = await res.json();
       if (data.success && data.data) {
-        return augmentPlantData(data.data, apiBaseUrl);
+        let validCameraPaths = new Set<string>();
+        try {
+          const recUrl = resolveApiUrl(apiBaseUrl, `/2/account/plant/${plantId}/recordings?plantId=${plantId}&videoToken=true`);
+          const recRes = await fetch(recUrl, { headers: getHeaders(activeToken), credentials: 'same-origin' });
+          if (recRes.ok) {
+            const recData = await recRes.json();
+            if (recData.data && Array.isArray(recData.data)) {
+              recData.data.forEach((r: any) => {
+                if (r.cameraPath) validCameraPaths.add(r.cameraPath);
+                if (r.path) validCameraPaths.add(r.path);
+                if (r.name) validCameraPaths.add(r.name);
+              });
+              console.log(`[OmniRecord] Found ${validCameraPaths.size} unique cameras with recordings from Cupola 360.`);
+            }
+          }
+        } catch (e) {
+          console.warn('[OmniRecord] Failed to fetch recordings to filter cameras', e);
+        }
+        return augmentPlantData(data.data, apiBaseUrl, validCameraPaths);
       }
     }
   } catch (err) {
@@ -258,7 +276,7 @@ export async function fetchPlantData(
   return getMockPlantData(plantId, apiBaseUrl);
 }
 
-function augmentPlantData(rawPlant: PlantData, apiBaseUrl: string): PlantData {
+function augmentPlantData(rawPlant: PlantData, apiBaseUrl: string, validCameraPaths?: Set<string>): PlantData {
   // Log the first camera to help debug what properties are available
   if (rawPlant.cameras && rawPlant.cameras.length > 0) {
     console.log('[OmniRecord] First camera data from API:', rawPlant.cameras[0]);
@@ -285,7 +303,12 @@ function augmentPlantData(rawPlant: PlantData, apiBaseUrl: string): PlantData {
 
   let augmentedCameras: Camera[] = rawPlant.cameras
     .filter((cam: any) => {
-      // Relaxed filter to catch different ways the API might indicate a recording camera
+      // If we successfully fetched valid recordings, use them exclusively to filter!
+      if (validCameraPaths && validCameraPaths.size > 0) {
+        return validCameraPaths.has(cam.path) || validCameraPaths.has(cam.name) || validCameraPaths.has(cam.relayUri);
+      }
+      
+      // Fallback relaxed filter if recordings API failed or returned empty
       return cam.recording == true || 
              cam.recording === 1 || 
              cam.recording === 'true' || 
