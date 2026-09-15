@@ -5,7 +5,6 @@ import { Header } from './components/Header';
 import { RecordingGrid } from './components/RecordingGrid';
 import { Panorama360Viewer } from './components/Panorama360Viewer';
 import { CameraRecordingsScreen } from './components/CameraRecordingsScreen';
-import { FloorplanMinimap } from './components/FloorplanMinimap';
 import { StickyNotesDrawer } from './components/StickyNotesDrawer';
 import { ApiSettingsModal } from './components/ApiSettingsModal';
 import {
@@ -222,45 +221,20 @@ export function App() {
         </div>
 
         {/* View Mode Content */}
-        {viewMode === 'map' ? (
-          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center gap-3">
-            <div className="flex items-center justify-between w-full">
-              <h3 className="text-xs font-semibold text-gray-800 flex items-center gap-1.5">
-                <Compass className="w-4 h-4 text-indigo-500" /> 2D Plant Floorplan Overview
-              </h3>
-              <span className="text-xs text-gray-500">Click any camera pin to view recordings</span>
-            </div>
-
-            <div className="w-full max-w-4xl h-[480px]">
-              <FloorplanMinimap
-                cameras={filteredCameras}
-                currentCamera={filteredCameras[0] || plantData?.cameras[0]}
-                onSelectCamera={(cam) => {
-                  setActiveCamera(cam);
-                  setPageScreen('recordings');
-                }}
-                renderFile={plantData?.renderFile || ''}
-                currentYaw={180}
-                isExpanded={true}
-              />
-            </div>
-          </div>
-        ) : (
-          <RecordingGrid
-            cameras={filteredCameras}
-            onSelectCamera={(cam) => {
-              setActiveCamera(cam);
-              setPageScreen('recordings');
-            }}
-            currentDate={currentDate}
-            selectedSite={selectedSite}
-            viewMode={viewMode}
-            onAddStickyNote={(cam) => {
-              setActiveCamera(cam);
-              setIsStickyNotesOpen(true);
-            }}
-          />
-        )}
+        <RecordingGrid
+          cameras={filteredCameras}
+          onSelectCamera={(cam) => {
+            setActiveCamera(cam);
+            setPageScreen('recordings');
+          }}
+          currentDate={currentDate}
+          selectedSite={selectedSite}
+          viewMode={viewMode}
+          onAddStickyNote={(cam) => {
+            setActiveCamera(cam);
+            setIsStickyNotesOpen(true);
+          }}
+        />
       </main>
 
       {/* Sticky Notes Drawer */}

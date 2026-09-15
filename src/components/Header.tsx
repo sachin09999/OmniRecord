@@ -5,7 +5,6 @@ import {
   MapPin,
   Grid,
   List,
-  Map,
   ChevronDown,
   ChevronsUpDown
 } from 'lucide-react';
@@ -196,18 +195,6 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <List className="w-4 h-4" />
             <span>List</span>
-          </button>
-
-          <button
-            onClick={() => onViewModeChange('map')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition ${
-              viewMode === 'map'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-            }`}
-          >
-            <Map className="w-4 h-4" />
-            <span>Floorplan Map</span>
           </button>
         </div>
       </div>

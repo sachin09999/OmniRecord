@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import type { Camera, CameraIcon, RecordingItem, Neighbors } from '../types/camera';
 import { fetchCameraRecordings, resolveApiUrl } from '../services/apiService';
-import { FloorplanMinimap } from './FloorplanMinimap';
 import { PlaybackTimeline } from './PlaybackTimeline';
 import {
   ChevronLeft,
@@ -21,7 +20,7 @@ interface Panorama360ViewerProps {
   camera: Camera;
   activeRecording: RecordingItem | null;
   allCameras: Camera[];
-  renderFile: string;
+  renderFile?: string;
   onClose: () => void;
   onBackToRecordings: () => void;
   onSelectCamera: (cam: Camera) => void;
@@ -35,7 +34,7 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
   camera,
   activeRecording,
   allCameras,
-  renderFile,
+  renderFile: _renderFile,
   onClose,
   onBackToRecordings,
   onSelectCamera,
@@ -45,7 +44,6 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
   authToken = '',
 }) => {
   const mountRef = useRef<HTMLDivElement | null>(null);
-  const [currentYaw, setCurrentYaw] = useState<number>(camera.basePosition || 0);
   const [isAutoRotating, _setIsAutoRotating] = useState<boolean>(false);
   const isAutoRotatingRef = useRef<boolean>(false);
   
@@ -59,7 +57,6 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
   const [recordingSeconds, setRecordingSeconds] = useState<number>(0);
   const [hoveredHotspot, setHoveredHotspot] = useState<CameraIcon | null>(null);
   const [activeTool, setActiveTool] = useState<'selection' | 'screen' | 'window' | 'default'>('default');
-  const [minimapExpanded, setMinimapExpanded] = useState<boolean>(false);
   const [notification, setNotification] = useState<string | null>(null);
 
   const [recordings, setRecordings] = useState<RecordingItem[]>([]);
@@ -246,9 +243,6 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
 
       cameraObj.lookAt(targetVectorRef.current);
       renderer.render(scene, cameraObj);
-
-      const normYaw = ((lonRef.current % 360) + 360) % 360;
-      setCurrentYaw(normYaw);
     };
 
     animate();
@@ -489,19 +483,6 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
             <span>REC 00:{recordingSeconds < 10 ? `0${recordingSeconds}` : recordingSeconds}</span>
           </div>
         )}
-
-        {/* Floating Floorplan Minimap */}
-        <div className="absolute bottom-16 left-6 z-30">
-          <FloorplanMinimap
-            cameras={allCameras}
-            currentCamera={camera}
-            onSelectCamera={onSelectCamera}
-            renderFile={renderFile}
-            currentYaw={currentYaw}
-            isExpanded={minimapExpanded}
-            onToggleExpand={() => setMinimapExpanded(!minimapExpanded)}
-          />
-        </div>
 
         {/* Floating Dark Glassmorphism Toolbar */}
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-[#14171D]/90 border border-[#2A2F3D] rounded-xl p-1.5 shadow-2xl flex items-center gap-1.5 backdrop-blur-lg">
