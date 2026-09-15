@@ -261,11 +261,14 @@ export async function fetchPlantData(
 }
 
 function augmentPlantData(rawPlant: PlantData, apiBaseUrl: string): PlantData {
-  const augmentedCameras: Camera[] = rawPlant.cameras
-    .filter((cam: any) => cam.recording === true)
-    .map((cam) => {
-      const is360 = cam.name.includes('RTMP') || !cam.relayUri.startsWith('rtsp');
-    const imagePath = (cam as any).originFile || (cam as any).renderFile;
+  // Log the first camera to help debug what properties are available
+  if (rawPlant.cameras && rawPlant.cameras.length > 0) {
+    console.log('[OmniRecord] First camera data from API:', rawPlant.cameras[0]);
+  }
+
+  const mapCamera = (cam: any): Camera => {
+    const is360 = cam.name.includes('RTMP') || (cam.relayUri && !cam.relayUri.startsWith('rtsp'));
+    const imagePath = cam.originFile || cam.renderFile;
     const fullImageUrl = imagePath ? `${apiBaseUrl}${imagePath}` : createProceduralPanorama(cam.name, cam.relayUri);
 
     return {
@@ -280,7 +283,24 @@ function augmentPlantData(rawPlant: PlantData, apiBaseUrl: string): PlantData {
       thumbnailUrl: fullImageUrl,
       isOnline: true,
     };
-  });
+  };
+
+  let augmentedCameras: Camera[] = rawPlant.cameras
+    .filter((cam: any) => {
+      // Relaxed filter to catch different ways the API might indicate a recording camera
+      return cam.recording == true || 
+             cam.recording === 1 || 
+             cam.recording === 'true' || 
+             cam.hasRecordings == true || 
+             cam.isRecording == true;
+    })
+    .map(mapCamera);
+
+  // Fallback: If the filter removed everything (e.g. the property name is different), show all cameras so the app isn't broken.
+  if (augmentedCameras.length === 0 && rawPlant.cameras.length > 0) {
+    console.warn('[OmniRecord] The recording filter removed all cameras! Falling back to showing all cameras.');
+    augmentedCameras = rawPlant.cameras.map(mapCamera);
+  }
 
   return {
     ...rawPlant,
