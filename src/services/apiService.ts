@@ -432,15 +432,8 @@ export function calculateTimeRange(dateStr: string): { startTime: string; endTim
   const dd = isNaN(d.getTime()) ? '12' : String(d.getUTCDate()).padStart(2, '0');
   const isoCurrentDay = `${yyyy}-${mm}-${dd}`;
 
-  const prevDay = new Date(d);
-  prevDay.setUTCDate(prevDay.getUTCDate() - 1);
-  const prevYyyy = isNaN(prevDay.getTime()) ? 2026 : prevDay.getUTCFullYear();
-  const prevMm = isNaN(prevDay.getTime()) ? '09' : String(prevDay.getUTCMonth() + 1).padStart(2, '0');
-  const prevDd = isNaN(prevDay.getTime()) ? '11' : String(prevDay.getUTCDate()).padStart(2, '0');
-  const isoPrevDay = `${prevYyyy}-${prevMm}-${prevDd}`;
-
-  const startTime = `${isoPrevDay}T20:00:00.000Z`;
-  const endTime = `${isoCurrentDay}T19:59:59.999Z`;
+  const startTime = `${isoCurrentDay}T00:00:00.000Z`;
+  const endTime = `${isoCurrentDay}T23:59:59.999Z`;
 
   return { startTime, endTime };
 }

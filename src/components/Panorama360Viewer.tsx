@@ -62,6 +62,7 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
   const [recordings, setRecordings] = useState<RecordingItem[]>([]);
   const [neighbors, setNeighbors] = useState<Neighbors>({ previous: null, next: null });
   const [selectedRecording, setSelectedRecording] = useState<RecordingItem | null>(activeRecording);
+  const [isLiveStream, setIsLiveStream] = useState<boolean>(!activeRecording);
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
 
   useEffect(() => {
@@ -555,6 +556,30 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
             <FileText className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Floating Right-Bottom Live Toggle Button */}
+        <button
+          onClick={() => {
+            if (isLiveStream) {
+              setIsLiveStream(false);
+              if (recordings && recordings.length > 0) {
+                setSelectedRecording(recordings[0]);
+              }
+            } else {
+              setIsLiveStream(true);
+              setSelectedRecording(null);
+            }
+          }}
+          className={`absolute bottom-8 right-6 z-40 px-3.5 py-1.5 rounded-xl border text-xs font-bold transition-all duration-200 shadow-2xl flex items-center gap-2 backdrop-blur-md ${
+            isLiveStream
+              ? 'bg-red-600/90 hover:bg-red-600 text-white border-red-400 ring-2 ring-red-500/40'
+              : 'bg-[#14171D]/90 hover:bg-[#222733] text-gray-300 border-[#2A2F3D] hover:text-white'
+          }`}
+          title={isLiveStream ? "Switch to Recording Playback" : "Switch to Live Camera Stream"}
+        >
+          <span className={`w-2 h-2 rounded-full ${isLiveStream ? 'bg-white animate-ping' : 'bg-gray-500'}`} />
+          <span>{isLiveStream ? 'LIVE' : 'Live'}</span>
+        </button>
       </div>
 
       {/* Docked Cupola Ruler Timeline */}
@@ -564,8 +589,11 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
           recordings={recordings}
           neighbors={neighbors}
           apiBaseUrl={apiBaseUrl}
-          onSelectRecording={(rec) => setSelectedRecording(rec)}
-          activeRecording={selectedRecording}
+          onSelectRecording={(rec) => {
+            setSelectedRecording(rec);
+            setIsLiveStream(false);
+          }}
+          activeRecording={isLiveStream ? null : selectedRecording}
           videoElement={videoElement}
         />
       </div>
