@@ -132,7 +132,17 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
 
     const startWebRTC = async () => {
       try {
-        const rtspUrl = `rtsp://${camera.ip}:554/${camera.path || camera.relayUri}`;
+        // Fallback to the API host IP if the camera doesn't provide one
+        let camIp = camera.ip;
+        if (!camIp) {
+          try {
+            camIp = new URL(apiBaseUrl).hostname;
+          } catch (e) {
+            camIp = '10.10.12.50'; // Safe fallback
+          }
+        }
+        // Use port 8554 as configured in Cupola360 deployment settings
+        const rtspUrl = `rtsp://${camIp}:8554/${camera.path || camera.relayUri}`;
         pc = new RTCPeerConnection();
         pc.addTransceiver('video', { direction: 'recvonly' });
 
