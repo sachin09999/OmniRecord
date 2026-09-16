@@ -307,7 +307,7 @@ export async function fetchPlantData(
         } catch (e: any) {
           console.warn('[OmniRecord] Failed to fetch recordings to filter cameras', e);
         }
-        return augmentPlantData(data.data, apiBaseUrl, validCameraPaths, cameraThumbMap);
+        return await augmentPlantData(data.data, apiBaseUrl, validCameraPaths, cameraThumbMap);
       }
     }
   } catch (err) {
@@ -351,12 +351,67 @@ export async function fetchPlantData(
   return getMockPlantData(plantId, apiBaseUrl);
 }
 
-function augmentPlantData(
+async function fetchActualNvrCameras(apiBaseUrl: string): Promise<Camera[]> {
+  const nvrCameras: Camera[] = [];
+  try {
+    const authString = btoa(`admin:16@SnV?cR1`);
+    const res = await fetch(resolveApiUrl(apiBaseUrl, '/api/nvr/ISAPI/System/Video/inputs/channels'), {
+      method: 'GET',
+      headers: {
+        'Authorization': `Basic ${authString}`
+      }
+    });
+    
+    if (res.ok) {
+      const xmlText = await res.text();
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(xmlText, 'application/xml');
+      const channels = xmlDoc.getElementsByTagName('VideoInputChannel');
+      
+      for (let i = 0; i < channels.length; i++) {
+        const chan = channels[i];
+        const id = chan.getElementsByTagName('id')[0]?.textContent;
+        const name = chan.getElementsByTagName('name')[0]?.textContent || `Camera ${id}`;
+        
+        if (id) {
+          nvrCameras.push({
+            _id: `nvr-camera-${id}`,
+            name: name.replace(/\s+/g, '_'),
+            locationName: name,
+            relayUri: `NVR_${id}`,
+            x: 0.5 + (Math.random() * 0.4 - 0.2),
+            y: 0.5 + (Math.random() * 0.4 - 0.2),
+            path: `NVR_${id}`,
+            rotateSpeed: 0,
+            rotateDirection: 0,
+            basePosition: 0,
+            type: 'nvr',
+            nvrChannelId: id,
+            icons: [],
+            isOnline: true,
+            recording: true,
+            uri: name,
+            // satisfy Camera interface
+            chipid: null,
+            ip: '10.10.12.2',
+            port: '80',
+            vfov: 0
+          } as unknown as Camera);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[OmniRecord] Failed to fetch actual NVR cameras', err);
+  }
+  return nvrCameras;
+}
+
+async function augmentPlantData(
   rawPlant: PlantData,
   apiBaseUrl: string,
   validCameraPaths?: Set<string>,
   cameraThumbMap?: Map<string, string>
-): PlantData {
+): Promise<PlantData> {
   // Log the first camera to help debug what properties are available
   if (rawPlant.cameras && rawPlant.cameras.length > 0) {
     console.log('[OmniRecord] First camera data from API:', rawPlant.cameras[0]);
@@ -404,9 +459,16 @@ function augmentPlantData(
     augmentedCameras = rawPlant.cameras.map(mapCamera);
   }
 
-  // Inject NVR cameras from our mock config because the Cupola backend doesn't know about them
-  const mockNvrCameras = getMockPlantData('mock', apiBaseUrl).cameras.filter((c) => c.type === 'nvr');
-  augmentedCameras = [...augmentedCameras, ...mockNvrCameras];
+  // Inject actual NVR cameras from the Hikvision API!
+  let actualNvrCameras = await fetchActualNvrCameras(apiBaseUrl);
+  if (actualNvrCameras.length === 0) {
+    console.log('[OmniRecord] No real NVR cameras found, falling back to mock ones for UI testing.');
+    actualNvrCameras = getMockPlantData('mock', apiBaseUrl).cameras.filter((c) => c.type === 'nvr');
+  } else {
+    console.log(`[OmniRecord] Successfully fetched ${actualNvrCameras.length} REAL cameras from NVR!`);
+  }
+  
+  augmentedCameras = [...augmentedCameras, ...actualNvrCameras];
 
   return {
     ...rawPlant,
