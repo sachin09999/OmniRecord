@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import type { Camera, CameraIcon, RecordingItem, Neighbors } from '../types/camera';
 import { fetchCameraRecordings, resolveApiUrl } from '../services/apiService';
 import { PlaybackTimeline } from './PlaybackTimeline';
-import ModernLoadingSpinner from './ModernLoadingSpinner';
+import { ModernLoadingSpinner } from './ModernLoadingSpinner';
 import {
   ChevronLeft,
   Camera as CameraIconLucide,
