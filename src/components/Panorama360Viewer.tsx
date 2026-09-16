@@ -117,67 +117,92 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
     };
   }, [camera, viewDate, apiBaseUrl, authToken]);
 
-  // Live Stream polling to keep stream updated with latest live recordings
+  // Live Stream WebRTC Connection (Zero-latency via go2rtc)
   useEffect(() => {
     if (!isLiveMode) return;
 
-    const pollLiveStream = () => {
-      const todayDateStr = new Date().toISOString().split('T')[0];
-      fetchCameraRecordings(apiBaseUrl, camera, todayDateStr, undefined, undefined, authToken).then((res) => {
-        if (res.recordings && res.recordings.length > 0) {
-          setRecordings(res.recordings);
-          setNeighbors(res.neighbors);
-          const latestClip = res.recordings[0];
-          // Update selected recording if a newer live recording segment arrived
-          setSelectedRecording((prev) => {
-            if (!prev || prev._id !== latestClip._id) {
-              console.log('[OmniRecord Live] Updated to latest live camera segment:', latestClip);
-              return latestClip;
-            }
-            return prev;
-          });
+    let pc: RTCPeerConnection | null = null;
+    const video = document.createElement('video');
+    video.crossOrigin = 'anonymous';
+    video.muted = true;
+    video.playsInline = true;
+    video.autoplay = true;
+
+    console.log(`[OmniRecord Live] Initializing zero-latency WebRTC stream for ${camera.name}...`);
+
+    const startWebRTC = async () => {
+      try {
+        const rtspUrl = `rtsp://${camera.ip}:554/${camera.path || camera.relayUri}`;
+        pc = new RTCPeerConnection();
+        pc.addTransceiver('video', { direction: 'recvonly' });
+
+        pc.ontrack = (event) => {
+          if (video.srcObject !== event.streams[0]) {
+            video.srcObject = event.streams[0];
+            console.log('[OmniRecord Live] WebRTC stream received and attached to video element.');
+            video.play().catch((err) => console.warn('[OmniRecord Live] Video playback autoplay blocked:', err));
+          }
+        };
+
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+
+        const res = await fetch(`/api/webrtc?src=${encodeURIComponent(rtspUrl)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ type: offer.type, sdp: offer.sdp || '' })
+        });
+
+        if (!res.ok) {
+          throw new Error(`go2rtc returned HTTP ${res.status}`);
         }
-      });
+        
+        const sdpAnswer = await res.text();
+        await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: sdpAnswer }));
+      } catch (err) {
+        console.error('[OmniRecord Live] WebRTC connection failed:', err);
+      }
     };
 
-    pollLiveStream();
-    const intervalId = setInterval(pollLiveStream, 8000);
+    startWebRTC();
+    setVideoElement(video);
 
-    return () => clearInterval(intervalId);
-  }, [isLiveMode, camera, apiBaseUrl, authToken]);
+    const videoTexture = new THREE.VideoTexture(video);
+    videoTexture.colorSpace = THREE.SRGBColorSpace;
 
+    if (sphereMeshRef.current) {
+      (sphereMeshRef.current.material as THREE.MeshBasicMaterial).map = videoTexture;
+      (sphereMeshRef.current.material as THREE.MeshBasicMaterial).needsUpdate = true;
+    }
+
+    return () => {
+      if (pc) {
+        pc.close();
+      }
+      setVideoElement(null);
+      video.pause();
+      video.srcObject = null;
+      video.load();
+    };
+  }, [isLiveMode, camera]);
+
+  // Historical Recording Playback
   useEffect(() => {
+    if (isLiveMode) return; // Skip if in live mode, handled by WebRTC effect
     if (!selectedRecording || (!selectedRecording.videoPath && !selectedRecording.videoUrl)) return;
 
     const fullVideoUrl = selectedRecording.videoUrl || resolveApiUrl(apiBaseUrl, selectedRecording.videoPath!);
-    console.log(`[OmniRecord Stream] Playing video stream (isLiveMode: ${isLiveMode}): ${fullVideoUrl}`);
+    console.log(`[OmniRecord Playback] Playing historical video stream: ${fullVideoUrl}`);
 
     const video = document.createElement('video');
     video.src = fullVideoUrl;
     video.crossOrigin = 'anonymous';
-    video.loop = isLiveMode; // Loop in live mode to preserve continuous real-time feed
     video.muted = true;
     video.playsInline = true;
 
-    // Zero-lag Live Edge Synchronization
-    const handleLoadedMetadata = () => {
-      if (isLiveMode && video.duration && !isNaN(video.duration)) {
-        console.log(`[OmniRecord Live Sync] Jumping to exact live edge (${video.duration}s) for zero-lag stream`);
-        video.currentTime = Math.max(0, video.duration - 0.2);
-      }
-    };
-
-    video.addEventListener('loadedmetadata', handleLoadedMetadata);
-    video.addEventListener('canplay', handleLoadedMetadata);
-
     // Auto advance to next recording clip when current clip ends
     const handleEnded = () => {
-      if (isLiveMode) {
-        video.currentTime = 0;
-        video.play().catch(() => {});
-        return;
-      }
-      console.log('[OmniRecord Stream] Video clip ended, advancing to next continuous recording clip...');
+      console.log('[OmniRecord Playback] Video clip ended, advancing to next continuous recording clip...');
       if (recordings && recordings.length > 0 && selectedRecording) {
         const currentIndex = recordings.findIndex(r => r._id === selectedRecording._id);
         // Recordings are sorted descending by time (latest first), so chronological next is index - 1
@@ -192,7 +217,7 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
     // Set video state so child components can control it
     setVideoElement(video);
     
-    video.play().catch((err) => console.warn('[OmniRecord] Video playback autoplay blocked:', err));
+    video.play().catch((err) => console.warn('[OmniRecord Playback] Video playback autoplay blocked:', err));
 
     const videoTexture = new THREE.VideoTexture(video);
     videoTexture.colorSpace = THREE.SRGBColorSpace;
@@ -203,8 +228,6 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
     }
 
     return () => {
-      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      video.removeEventListener('canplay', handleLoadedMetadata);
       video.removeEventListener('ended', handleEnded);
       setVideoElement(null);
       video.pause();

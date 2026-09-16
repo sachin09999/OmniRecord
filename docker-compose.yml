@@ -11,3 +11,9 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
+
+  go2rtc:
+    image: alexxit/go2rtc:latest
+    container_name: go2rtc
+    network_mode: host
+    restart: unless-stopped

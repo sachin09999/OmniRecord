@@ -21,6 +21,11 @@ export default defineConfig({
         cookieDomainRewrite: 'localhost',
         secure: false,
       },
+      '/api/webrtc': {
+        target: 'http://127.0.0.1:1984',
+        changeOrigin: true,
+        secure: false,
+      },
       '/static': {
         target: 'http://10.10.12.50:3000',
         changeOrigin: true,
