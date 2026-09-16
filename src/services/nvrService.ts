@@ -86,7 +86,8 @@ export const fetchNvrRecordings = async (
       startTime: chunk.start.toISOString(),
       endTime: chunk.end.toISOString(),
       videoPath: '', 
-      duration: Math.round((chunk.end.getTime() - chunk.start.getTime()) / 1000)
+      duration: Math.round((chunk.end.getTime() - chunk.start.getTime()) / 1000),
+      thumbnailUrl: `/api/nvr/ISAPI/Streaming/channels/${paddedTrackID}/picture`
     }));
     
     // Sort descending by time (latest first) to match OmniRecord expectations
