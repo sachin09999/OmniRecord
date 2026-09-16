@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import type { RecordingItem, Neighbors } from '../types/camera';
+import type { RecordingItem, Neighbors, Camera } from '../types/camera';
 import { resolveRecordingThumbnailUrl, downloadVideoFile } from '../services/apiService';
 import {
   Play,
@@ -27,6 +27,7 @@ interface PlaybackTimelineProps {
   onSelectRecording?: (rec: RecordingItem) => void;
   activeRecording?: RecordingItem | null;
   videoElement?: HTMLVideoElement | null;
+  camera?: Camera;
 }
 
 export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
@@ -37,7 +38,8 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
   authToken = '',
   onSelectRecording,
   activeRecording,
-  videoElement
+  videoElement,
+  camera
 }) => {
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [zoomScale, setZoomScale] = useState<number>(1); // 1x to 8x zoom
@@ -117,19 +119,32 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
     }
   }, [videoElement, playbackSpeed]);
 
-  // Frame Cut & MP4 Download trigger handler
   const handleDownloadCutMp4 = async () => {
-    let mediaUrl = activeRecording?.videoUrl || (activeRecording?.videoPath ? `${apiBaseUrl}/${activeRecording.videoPath}` : undefined);
-    if (!mediaUrl && videoElement?.src) {
-      mediaUrl = videoElement.src;
-    }
-
     const startSec = cutStartSeconds !== null ? cutStartSeconds : currentSeconds;
     const endSec = cutEndSeconds !== null ? cutEndSeconds : Math.min(86400, startSec + 60);
 
-    const startStr = formatTimeStr(startSec).replace(/:/g, '-');
-    const endStr = formatTimeStr(endSec).replace(/:/g, '-');
-    const filename = `OmniRecord_Cut_${startStr}_to_${endStr}.mp4`;
+    const startStrFmt = formatTimeStr(startSec).replace(/:/g, '-');
+    const endStrFmt = formatTimeStr(endSec).replace(/:/g, '-');
+    const filename = `OmniRecord_Cut_${startStrFmt}_to_${endStrFmt}.mp4`;
+
+    let mediaUrl = activeRecording?.videoUrl || (activeRecording?.videoPath ? `${apiBaseUrl}/${activeRecording.videoPath}` : undefined);
+    
+    // For NVR cameras, we must transcode the RTSP stream using go2rtc on the backend
+    if (camera?.type === 'nvr' && activeRecording?.startTime) {
+      const rawChan = camera.nvrChannelId || '1';
+      const rtspChan = rawChan.length < 3 ? `${rawChan}01` : rawChan;
+      
+      const datePart = activeRecording.startTime.replace(/[-:]/g, '').substring(0, 8);
+      const startIso = `${datePart}T${formatTimeStr(startSec).replace(/:/g, '')}Z`;
+      const endIso = `${datePart}T${formatTimeStr(endSec).replace(/:/g, '')}Z`;
+      
+      const rtspUrl = `rtsp://admin:16%40SnV%3FcR1@10.10.12.2:554/Streaming/tracks/${rtspChan}?starttime=${startIso}&endtime=${endIso}`;
+      
+      // Use go2rtc MP4 download endpoint
+      mediaUrl = `/api/stream.mp4?src=${encodeURIComponent(rtspUrl)}`;
+    } else if (!mediaUrl && videoElement?.src) {
+      mediaUrl = videoElement.src;
+    }
 
     setIsExportingCut(true);
 

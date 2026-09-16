@@ -273,6 +273,7 @@ export const StandardViewer: React.FC<StandardViewerProps> = ({
             }}
             activeRecording={selectedRecording}
             videoElement={videoRef.current}
+            camera={camera}
           />
         </div>
       )}

@@ -738,17 +738,18 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
       {!isLiveMode && (
         <div className="relative z-30 border-t border-[#262A34] bg-[#121418] shrink-0">
           <PlaybackTimeline
-            currentDate={viewDate}
+            currentDate={currentDate}
             recordings={recordings}
             neighbors={neighbors}
-            apiBaseUrl={apiBaseUrl}
-            authToken={authToken}
             onSelectRecording={(rec) => {
               setSelectedRecording(rec);
               setIsLiveMode(false);
             }}
             activeRecording={selectedRecording}
             videoElement={videoElement}
+            apiBaseUrl={apiBaseUrl}
+            authToken={authToken}
+            camera={camera}
           />
         </div>
       )}

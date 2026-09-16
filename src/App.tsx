@@ -6,7 +6,7 @@ import { RecordingGrid } from './components/RecordingGrid';
 import { Panorama360Viewer } from './components/Panorama360Viewer';
 import { StandardViewer } from './components/StandardViewer';
 import { CameraRecordingsScreen } from './components/CameraRecordingsScreen';
-import { StickyNotesDrawer } from './components/StickyNotesDrawer';
+import { FloatingStickyNote } from './components/FloatingStickyNote';
 import { ApiSettingsModal } from './components/ApiSettingsModal';
 import { ModernLoadingSpinner } from './components/ModernLoadingSpinner';
 import {
@@ -328,8 +328,7 @@ export function App() {
         )}
       </main>
 
-      {/* Sticky Notes Drawer */}
-      <StickyNotesDrawer
+      <FloatingStickyNote
         isOpen={isStickyNotesOpen}
         onClose={() => setIsStickyNotesOpen(false)}
         stickyNotes={stickyNotes}
