@@ -228,7 +228,7 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
             }`}
           >
             <ChevronLeft className="w-4 h-4" />
-            <span>Cameras</span>
+            <span>Dashboard</span>
           </button>
 
           <div className={`h-4 w-px ${isDark ? 'bg-slate-800' : 'bg-gray-200'}`}></div>

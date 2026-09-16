@@ -87,9 +87,11 @@ export const StandardViewer: React.FC<StandardViewerProps> = ({
           // Live NVR stream
           rtspUrl = `rtsp://admin:16%40SnV%3FcR1@10.10.12.2:554/Streaming/Channels/${rtspChan}`;
         } else if (selectedRecording) {
-          // Historical NVR playback stream (convert 2026-09-15T10:00:00Z to 20260915T100000Z)
+          // Historical NVR playback stream
           const startStr = selectedRecording.startTime?.replace(/[-:]/g, '') || '';
-          const endStr = selectedRecording.endTime?.replace(/[-:]/g, '') || '';
+          // Play continuously until the end of the day to span across NVR file chunks seamlessly
+          const datePart = startStr.substring(0, 8);
+          const endStr = `${datePart}T235959Z`;
           rtspUrl = `rtsp://admin:16%40SnV%3FcR1@10.10.12.2:554/Streaming/tracks/${rtspChan}?starttime=${startStr}&endtime=${endStr}`;
         } else {
           return;

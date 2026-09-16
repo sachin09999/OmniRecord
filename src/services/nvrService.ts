@@ -4,6 +4,17 @@ import type { RecordingItem } from '../types/camera';
  * Searches for recording segments on a Hikvision NVR for a specific camera (trackID).
  * It uses the ISAPI XML ContentMgmt search endpoint.
  */
+// Helper to format Date into local time string like YYYY-MM-DDTHH:mm:ssZ for Hikvision
+const formatHikTime = (d: Date) => {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  const ss = String(d.getSeconds()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}Z`;
+};
+
 export const fetchNvrRecordings = async (
   trackID: string,
   startTime: Date,
@@ -13,15 +24,15 @@ export const fetchNvrRecordings = async (
     // Pad trackID for NVR (e.g. 1 -> 101)
     const paddedTrackID = trackID.length < 3 ? `${trackID}01` : trackID;
     
-    // Construct the ISAPI XML search request for 24/7 continuous recordings
+    // Construct the ISAPI XML search request for 24/7 continuous recordings using local time strings
     const xmlPayload = `<?xml version="1.0" encoding="utf-8"?>
 <CMSearchDescription>
   <searchID>${crypto.randomUUID().toUpperCase()}</searchID>
   <trackList><trackID>${paddedTrackID}</trackID></trackList>
   <timeSpanList>
     <timeSpan>
-      <startTime>${startTime.toISOString().split('.')[0] + 'Z'}</startTime>
-      <endTime>${endTime.toISOString().split('.')[0] + 'Z'}</endTime>
+      <startTime>${formatHikTime(startTime)}</startTime>
+      <endTime>${formatHikTime(endTime)}</endTime>
     </timeSpan>
   </timeSpanList>
   <maxResults>100</maxResults>
@@ -68,32 +79,14 @@ export const fetchNvrRecordings = async (
     
     if (rawChunks.length === 0) return [];
 
-    // Sort ascending to merge contiguous blocks
-    rawChunks.sort((a, b) => a.start.getTime() - b.start.getTime());
-
-    const mergedChunks: { start: Date; end: Date }[] = [rawChunks[0]];
-    
-    for (let i = 1; i < rawChunks.length; i++) {
-      const current = rawChunks[i];
-      const lastMerged = mergedChunks[mergedChunks.length - 1];
-      
-      // If gap is less than 60 seconds, merge them into a single continuous block
-      // This prevents the video stream from terminating prematurely when clicking a block
-      if (current.start.getTime() - lastMerged.end.getTime() <= 60000) {
-        if (current.end.getTime() > lastMerged.end.getTime()) {
-          lastMerged.end = current.end;
-        }
-      } else {
-        mergedChunks.push(current);
-      }
-    }
-
-    const recordings: RecordingItem[] = mergedChunks.map(chunk => ({
+    // Map raw chunks directly without merging so that the UI can group them into their actual hours properly
+    const recordings: RecordingItem[] = rawChunks.map(chunk => ({
       _id: `nvr-${paddedTrackID}-${chunk.start.toISOString()}`,
       cameraPath: `nvr_${paddedTrackID}`,
       startTime: chunk.start.toISOString(),
       endTime: chunk.end.toISOString(),
       videoPath: '', 
+      duration: Math.round((chunk.end.getTime() - chunk.start.getTime()) / 1000)
     }));
     
     // Sort descending by time (latest first) to match OmniRecord expectations
