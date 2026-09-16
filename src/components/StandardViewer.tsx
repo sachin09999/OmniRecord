@@ -82,12 +82,12 @@ export const StandardViewer: React.FC<StandardViewerProps> = ({
         let rtspUrl = '';
         if (isLiveMode) {
           // Live NVR stream
-          rtspUrl = `rtsp://admin:YOUR_NVR_PASSWORD_HERE@10.10.12.2:554/Streaming/Channels/${camera.nvrChannelId || '101'}`;
+          rtspUrl = `rtsp://admin:16%40SnV%3FcR1@10.10.12.2:554/Streaming/Channels/${camera.nvrChannelId || '101'}`;
         } else if (selectedRecording) {
           // Historical NVR playback stream (convert 2026-09-15T10:00:00Z to 20260915T100000Z)
           const startStr = selectedRecording.startTime?.replace(/[-:]/g, '') || '';
           const endStr = selectedRecording.endTime?.replace(/[-:]/g, '') || '';
-          rtspUrl = `rtsp://admin:YOUR_NVR_PASSWORD_HERE@10.10.12.2:554/Streaming/tracks/${camera.nvrChannelId || '101'}?starttime=${startStr}&endtime=${endStr}`;
+          rtspUrl = `rtsp://admin:16%40SnV%3FcR1@10.10.12.2:554/Streaming/tracks/${camera.nvrChannelId || '101'}?starttime=${startStr}&endtime=${endStr}`;
         } else {
           return;
         }

@@ -48,7 +48,7 @@ export function App() {
   const [cameraTypeFilter, setCameraTypeFilter] = useState<'all' | '360' | 'rtsp'>('all');
 
   // Multi-page navigation state
-  const [pageScreen, setPageScreen] = useState<'grid' | 'recordings' | 'viewer'>('grid');
+  const [pageScreen, setPageScreen] = useState<'dashboard' | 'grid' | 'recordings' | 'viewer'>('dashboard');
   const [activeCamera, setActiveCamera] = useState<Camera | null>(null);
   const [selectedRecording, setSelectedRecording] = useState<RecordingItem | null>(null);
 
@@ -222,80 +222,157 @@ export function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-5 py-5 flex flex-col gap-4">
-        {/* Simple Category Tabs */}
-        <div className={`flex items-center justify-between border-b pb-3 ${
-          theme === 'dark' ? 'border-slate-800' : 'border-gray-200'
-        }`}>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCameraTypeFilter('all')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 ${
-                cameraTypeFilter === 'all'
-                  ? 'bg-indigo-600 text-white font-semibold shadow-sm'
-                  : theme === 'dark'
-                  ? 'text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:bg-slate-800'
-                  : 'text-gray-600 hover:text-gray-900 bg-white border border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>All Cameras ({plantData?.cameras.length})</span>
-            </button>
+        {/* Simple Category Tabs (Only show in Grid view) */}
+        {pageScreen === 'grid' && (
+          <div className={`flex items-center justify-between border-b pb-3 ${
+            theme === 'dark' ? 'border-slate-800' : 'border-gray-200'
+          }`}>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPageScreen('dashboard')}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 mr-2 ${
+                  theme === 'dark'
+                    ? 'text-slate-300 hover:text-white bg-slate-800/50 hover:bg-slate-800'
+                    : 'text-gray-600 hover:text-gray-900 bg-gray-100/50 hover:bg-gray-100'
+                }`}
+              >
+                <span>&larr; Home</span>
+              </button>
 
-            <button
-              onClick={() => setCameraTypeFilter('360')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 ${
-                cameraTypeFilter === '360'
-                  ? 'bg-indigo-600 text-white font-semibold shadow-sm'
-                  : theme === 'dark'
-                  ? 'text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:bg-slate-800'
-                  : 'text-gray-600 hover:text-gray-900 bg-white border border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              <Compass className="w-3.5 h-3.5" />
-              <span>360° Patrol ({plantData?.cameras.filter((c) => c.type === '360').length})</span>
-            </button>
+              <button
+                onClick={() => setCameraTypeFilter('all')}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 ${
+                  cameraTypeFilter === 'all'
+                    ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                    : theme === 'dark'
+                    ? 'text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:bg-slate-800'
+                    : 'text-gray-600 hover:text-gray-900 bg-white border border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>All Cameras ({plantData?.cameras.length})</span>
+              </button>
 
-            <button
-              onClick={() => setCameraTypeFilter('rtsp')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 ${
-                cameraTypeFilter === 'rtsp'
-                  ? 'bg-indigo-600 text-white font-semibold shadow-sm'
-                  : theme === 'dark'
-                  ? 'text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:bg-slate-800'
-                  : 'text-gray-600 hover:text-gray-900 bg-white border border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              <Video className="w-3.5 h-3.5" />
-              <span>Fixed Cameras ({plantData?.cameras.filter((c) => c.type === 'rtsp' || c.type === 'nvr').length})</span>
-            </button>
+              <button
+                onClick={() => setCameraTypeFilter('360')}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 ${
+                  cameraTypeFilter === '360'
+                    ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                    : theme === 'dark'
+                    ? 'text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:bg-slate-800'
+                    : 'text-gray-600 hover:text-gray-900 bg-white border border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                <Compass className="w-3.5 h-3.5" />
+                <span>360° Patrol ({plantData?.cameras.filter((c) => c.type === '360').length})</span>
+              </button>
+
+              <button
+                onClick={() => setCameraTypeFilter('rtsp')}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 ${
+                  cameraTypeFilter === 'rtsp'
+                    ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                    : theme === 'dark'
+                    ? 'text-slate-300 hover:text-white bg-slate-900 border border-slate-800 hover:bg-slate-800'
+                    : 'text-gray-600 hover:text-gray-900 bg-white border border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                <Video className="w-3.5 h-3.5" />
+                <span>Fixed Cameras ({plantData?.cameras.filter((c) => c.type === 'rtsp' || c.type === 'nvr').length})</span>
+              </button>
+            </div>
+
+            <span className={`text-xs hidden sm:inline ${theme === 'dark' ? 'text-slate-500' : 'text-gray-500'}`}>
+              Plant ID: <span className="font-mono">{plantData?._id}</span>
+            </span>
           </div>
+        )}
 
-          <span className={`text-xs hidden sm:inline ${theme === 'dark' ? 'text-slate-500' : 'text-gray-500'}`}>
-            Plant ID: <span className="font-mono">{plantData?._id}</span>
-          </span>
-        </div>
+        {/* Dynamic Main Content: Dashboard vs Grid */}
+        {pageScreen === 'dashboard' ? (
+          <div className="flex-1 flex items-center justify-center py-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
+              {/* 360 Camera Card */}
+              <div 
+                onClick={() => {
+                  setCameraTypeFilter('360');
+                  setPageScreen('grid');
+                }}
+                className={`group relative overflow-hidden rounded-2xl cursor-pointer border transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl flex flex-col ${
+                  theme === 'dark' 
+                    ? 'bg-slate-900 border-slate-700 hover:border-indigo-500 hover:shadow-indigo-500/20' 
+                    : 'bg-white border-gray-200 hover:border-indigo-400 hover:shadow-indigo-500/10'
+                }`}
+              >
+                <div className="h-48 bg-gradient-to-br from-indigo-900 to-slate-900 flex items-center justify-center relative overflow-hidden">
+                  <Compass className="w-24 h-24 text-indigo-400 opacity-20 absolute -right-4 -bottom-4 group-hover:scale-110 transition duration-500" />
+                  <Compass className="w-16 h-16 text-indigo-300 group-hover:text-indigo-200 transition duration-300 z-10" />
+                </div>
+                <div className="p-6">
+                  <h2 className="text-2xl font-bold mb-2">360° Patrol Cameras</h2>
+                  <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-500'}`}>
+                    View immersive, zero-latency 360-degree surveillance feeds with VR-style dragging and panning.
+                  </p>
+                  <div className="mt-6 flex items-center gap-2">
+                    <span className="px-3 py-1 text-xs font-bold bg-indigo-600 text-white rounded-md">
+                      {plantData?.cameras.filter((c) => c.type === '360').length || 0} Cameras
+                    </span>
+                  </div>
+                </div>
+              </div>
 
-        {/* View Mode Content */}
-        <RecordingGrid
-          cameras={filteredCameras}
-          onSelectCamera={(cam) => {
-            setActiveCamera(cam);
-            setPageScreen('recordings');
-          }}
-          onSelectLiveCamera={(cam) => {
-            setActiveCamera(cam);
-            setSelectedRecording(null);
-            setPageScreen('viewer');
-          }}
-          currentDate={currentDate}
-          selectedSite={selectedSite}
-          viewMode={viewMode}
-          theme={theme}
-          onAddStickyNote={(cam) => {
-            setActiveCamera(cam);
-            setIsStickyNotesOpen(true);
-          }}
-        />
+              {/* IP / Fixed Camera Card */}
+              <div 
+                onClick={() => {
+                  setCameraTypeFilter('rtsp');
+                  setPageScreen('grid');
+                }}
+                className={`group relative overflow-hidden rounded-2xl cursor-pointer border transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl flex flex-col ${
+                  theme === 'dark' 
+                    ? 'bg-slate-900 border-slate-700 hover:border-emerald-500 hover:shadow-emerald-500/20' 
+                    : 'bg-white border-gray-200 hover:border-emerald-400 hover:shadow-emerald-500/10'
+                }`}
+              >
+                <div className="h-48 bg-gradient-to-br from-emerald-900 to-slate-900 flex items-center justify-center relative overflow-hidden">
+                  <Video className="w-24 h-24 text-emerald-400 opacity-20 absolute -right-4 -bottom-4 group-hover:scale-110 transition duration-500" />
+                  <Video className="w-16 h-16 text-emerald-300 group-hover:text-emerald-200 transition duration-300 z-10" />
+                </div>
+                <div className="p-6">
+                  <h2 className="text-2xl font-bold mb-2">Fixed IP Cameras (NVR)</h2>
+                  <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-500'}`}>
+                    Access standard 2D security cameras connected directly to the Hikvision NVR for crystal-clear monitoring.
+                  </p>
+                  <div className="mt-6 flex items-center gap-2">
+                    <span className="px-3 py-1 text-xs font-bold bg-emerald-600 text-white rounded-md">
+                      {plantData?.cameras.filter((c) => c.type === 'rtsp' || c.type === 'nvr').length || 0} Cameras
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <RecordingGrid
+            cameras={filteredCameras}
+            onSelectCamera={(cam) => {
+              setActiveCamera(cam);
+              setPageScreen('recordings');
+            }}
+            onSelectLiveCamera={(cam) => {
+              setActiveCamera(cam);
+              setSelectedRecording(null);
+              setPageScreen('viewer');
+            }}
+            currentDate={currentDate}
+            selectedSite={selectedSite}
+            viewMode={viewMode}
+            theme={theme}
+            onAddStickyNote={(cam) => {
+              setActiveCamera(cam);
+              setIsStickyNotesOpen(true);
+            }}
+          />
+        )}
       </main>
 
       {/* Sticky Notes Drawer */}

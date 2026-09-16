@@ -38,7 +38,7 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/nvr/, ''),
         // NVR credentials placeholder (requires NVR to support Basic Auth)
-        auth: 'admin:YOUR_NVR_PASSWORD_HERE' 
+        auth: 'admin:16@SnV?cR1' 
       },
       '/static': {
         target: 'http://10.10.12.50:3000',
