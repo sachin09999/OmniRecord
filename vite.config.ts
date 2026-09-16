@@ -26,6 +26,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      '/api/streams': {
+        target: 'http://go2rtc:1984',
+        changeOrigin: true,
+        secure: false,
+      },
       '/static': {
         target: 'http://10.10.12.50:3000',
         changeOrigin: true,

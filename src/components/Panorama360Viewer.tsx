@@ -143,6 +143,13 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
         }
         // Use port 8554 as configured in Cupola360 deployment settings
         const rtspUrl = `rtsp://${camIp}:8554/${camera.path || camera.relayUri}`;
+        
+        // Register the dynamic stream with go2rtc using the camera path as the name
+        const streamName = camera.path || camera.relayUri || 'camera';
+        await fetch(`/api/streams?src=${encodeURIComponent(rtspUrl)}&name=${encodeURIComponent(streamName)}`, {
+          method: 'PUT'
+        });
+
         pc = new RTCPeerConnection();
         pc.addTransceiver('video', { direction: 'recvonly' });
 
@@ -157,7 +164,8 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
 
-        const res = await fetch(`/api/webrtc?src=${encodeURIComponent(rtspUrl)}`, {
+        // Fetch WebRTC answer using the registered stream name
+        const res = await fetch(`/api/webrtc?src=${encodeURIComponent(streamName)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({ type: offer.type, sdp: offer.sdp || '' })
