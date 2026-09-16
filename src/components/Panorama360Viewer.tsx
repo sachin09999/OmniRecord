@@ -146,9 +146,12 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
         
         // Register the dynamic stream with go2rtc using the camera path as the name
         const streamName = camera.path || camera.relayUri || 'camera';
-        await fetch(`/api/streams?src=${encodeURIComponent(rtspUrl)}&name=${encodeURIComponent(streamName)}`, {
+        const putRes = await fetch(`/api/streams?src=${encodeURIComponent(rtspUrl)}&name=${encodeURIComponent(streamName)}`, {
           method: 'PUT'
         });
+        if (!putRes.ok) {
+          console.error('[OmniRecord Live] Failed to register stream with go2rtc:', await putRes.text());
+        }
 
         pc = new RTCPeerConnection();
         pc.addTransceiver('video', { direction: 'recvonly' });
@@ -172,7 +175,9 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
         });
 
         if (!res.ok) {
-          throw new Error(`go2rtc returned HTTP ${res.status}`);
+          const errorText = await res.text();
+          console.error('[OmniRecord Live] go2rtc error response:', errorText);
+          throw new Error(`go2rtc returned HTTP ${res.status}: ${errorText}`);
         }
         
         const sdpAnswer = await res.text();
