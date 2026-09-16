@@ -204,7 +204,7 @@ export const StandardViewer: React.FC<StandardViewerProps> = ({
       </div>
 
       {/* Main 2D Video Player */}
-      <div className="relative flex-1 bg-black flex items-center justify-center">
+      <div className="relative flex-1 min-h-0 bg-black flex items-center justify-center">
         <video 
           ref={videoRef}
           className="w-full h-full object-contain"

@@ -84,7 +84,7 @@ export const RecordingGrid: React.FC<RecordingGridProps> = ({
                 onClick={() => onSelectCamera(cam)}
                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center gap-1.5"
               >
-                <span>View 360°</span>
+                <span>View Camera</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
 
@@ -181,7 +181,7 @@ export const RecordingGrid: React.FC<RecordingGridProps> = ({
                         : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-900'
                     }`}
                   >
-                    <span>View 360°</span>
+                    <span>View Camera</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
