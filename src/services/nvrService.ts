@@ -27,8 +27,8 @@ export const fetchNvrRecordings = async (
             searchTimeList: [
               {
                 searchTime: {
-                  startTime: startTime.toISOString(),
-                  endTime: endTime.toISOString()
+                  startTime: startTime.toISOString().split('.')[0] + 'Z',
+                  endTime: endTime.toISOString().split('.')[0] + 'Z'
                 }
               }
             ]
