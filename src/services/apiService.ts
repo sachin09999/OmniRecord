@@ -354,19 +354,23 @@ export async function fetchPlantData(
 async function fetchActualNvrCameras(apiBaseUrl: string): Promise<Camera[]> {
   const nvrCameras: Camera[] = [];
   try {
-    const authString = btoa(`admin:16@SnV?cR1`);
-    const res = await fetch(resolveApiUrl(apiBaseUrl, '/api/nvr/ISAPI/System/Video/inputs/channels'), {
-      method: 'GET',
-      headers: {
-        'Authorization': `Basic ${authString}`
-      }
-    });
+    // Try InputProxy first (used by most NVRs for IP cameras)
+    let res = await fetch(resolveApiUrl(apiBaseUrl, '/api/nvr/ISAPI/ContentMgmt/InputProxy/channels'));
+    if (!res.ok) {
+      // Fallback to traditional inputs/channels
+      res = await fetch(resolveApiUrl(apiBaseUrl, '/api/nvr/ISAPI/System/Video/inputs/channels'));
+    }
     
     if (res.ok) {
       const xmlText = await res.text();
       const parser = new DOMParser();
       const xmlDoc = parser.parseFromString(xmlText, 'application/xml');
-      const channels = xmlDoc.getElementsByTagName('VideoInputChannel');
+      
+      // Check for both InputProxyChannel and VideoInputChannel
+      let channels = xmlDoc.getElementsByTagName('InputProxyChannel');
+      if (channels.length === 0) {
+        channels = xmlDoc.getElementsByTagName('VideoInputChannel');
+      }
       
       for (let i = 0; i < channels.length; i++) {
         const chan = channels[i];
@@ -374,6 +378,8 @@ async function fetchActualNvrCameras(apiBaseUrl: string): Promise<Camera[]> {
         const name = chan.getElementsByTagName('name')[0]?.textContent || `Camera ${id}`;
         
         if (id) {
+          const paddedId = id.length < 3 ? `${id}01` : id;
+          const snapUrl = resolveApiUrl(apiBaseUrl, `/api/nvr/ISAPI/Streaming/channels/${paddedId}/picture`);
           nvrCameras.push({
             _id: `nvr-camera-${id}`,
             name: name.replace(/\s+/g, '_'),
@@ -391,6 +397,8 @@ async function fetchActualNvrCameras(apiBaseUrl: string): Promise<Camera[]> {
             isOnline: true,
             recording: true,
             uri: name,
+            thumbnailUrl: snapUrl,
+            panoramaUrl: snapUrl,
             // satisfy Camera interface
             chipid: null,
             ip: '10.10.12.2',
