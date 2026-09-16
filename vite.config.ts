@@ -38,7 +38,14 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/nvr/, ''),
         // NVR credentials placeholder (requires NVR to support Basic Auth)
-        auth: 'admin:16@SnV?cR1' 
+        auth: 'admin:16@SnV?cR1',
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes) => {
+            if (proxyRes.statusCode === 401) {
+              delete proxyRes.headers['www-authenticate'];
+            }
+          });
+        }
       },
       '/static': {
         target: 'http://10.10.12.50:3000',
