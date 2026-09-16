@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { Camera, RecordingItem } from '../types/camera';
 import { fetchCameraRecordings, extractCameraPath, resolveApiUrl, resolveRecordingThumbnailUrl, downloadVideoFile } from '../services/apiService';
+import { fetchNvrRecordings } from '../services/nvrService';
 import { ModernCalendarPicker } from './ModernCalendarPicker';
 import { ModernLoadingSpinner } from './ModernLoadingSpinner';
 
@@ -79,13 +80,26 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
     setLoading(true);
     setError(null);
 
-    fetchCameraRecordings(apiBaseUrl, camera, dateStr, undefined, undefined, authToken)
-      .then((res) => {
-        setRecordings(res.recordings);
+    const load = async () => {
+      try {
+        let recs: RecordingItem[] = [];
+        
+        if (camera.type === 'nvr' && camera.nvrChannelId) {
+          const startOfDay = new Date(dateStr);
+          startOfDay.setHours(0, 0, 0, 0);
+          const endOfDay = new Date(dateStr);
+          endOfDay.setHours(23, 59, 59, 999);
+          recs = await fetchNvrRecordings(camera.nvrChannelId, startOfDay, endOfDay);
+        } else {
+          const res = await fetchCameraRecordings(apiBaseUrl, camera, dateStr, undefined, undefined, authToken);
+          recs = res.recordings;
+        }
+
+        setRecordings(recs);
         setLoading(false);
 
-        if (res.recordings && res.recordings.length > 0) {
-          const recordingDates = res.recordings
+        if (recs && recs.length > 0) {
+          const recordingDates = recs
             .filter((r) => r.startTime)
             .map((r) => {
               const d = new Date(r.startTime!);
@@ -101,18 +115,20 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
             setLatestDate(newestDate);
 
             // Auto-select latest recording date if user hasn't explicitly picked a date yet and current is empty
-            if (!userChangedDateRef.current && newestDate && res.recordings.length === 0) {
+            if (!userChangedDateRef.current && newestDate && recs.length === 0) {
               setSelectedDate(newestDate);
               if (onDateChange) onDateChange(newestDate);
             }
           }
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error('Failed to fetch recordings:', err);
         setError('Failed to fetch camera recordings.');
         setLoading(false);
-      });
+      }
+    };
+    
+    load();
   };
 
   useEffect(() => {

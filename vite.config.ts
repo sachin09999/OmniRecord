@@ -31,6 +31,15 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      // Proxy for Hikvision NVR ISAPI
+      '/api/nvr': {
+        target: 'http://10.10.12.2', // NVR IP address
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/nvr/, ''),
+        // NVR credentials placeholder (requires NVR to support Basic Auth)
+        auth: 'admin:YOUR_NVR_PASSWORD_HERE' 
+      },
       '/static': {
         target: 'http://10.10.12.50:3000',
         changeOrigin: true,

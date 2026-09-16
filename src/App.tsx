@@ -4,6 +4,7 @@ import { fetchPlantData } from './services/apiService';
 import { Header } from './components/Header';
 import { RecordingGrid } from './components/RecordingGrid';
 import { Panorama360Viewer } from './components/Panorama360Viewer';
+import { StandardViewer } from './components/StandardViewer';
 import { CameraRecordingsScreen } from './components/CameraRecordingsScreen';
 import { StickyNotesDrawer } from './components/StickyNotesDrawer';
 import { ApiSettingsModal } from './components/ApiSettingsModal';
@@ -95,7 +96,7 @@ export function App() {
       const matchesType =
         cameraTypeFilter === 'all' ||
         (cameraTypeFilter === '360' && cam.type === '360') ||
-        (cameraTypeFilter === 'rtsp' && cam.type === 'rtsp');
+        (cameraTypeFilter === 'rtsp' && (cam.type === 'rtsp' || cam.type === 'nvr'));
 
       return matchesSearch && matchesType;
     });
@@ -150,8 +151,27 @@ export function App() {
     );
   }
 
-  // Page 3: 360 Viewer Page
+  // Page 3: 360 Viewer Page (or Standard 2D Viewer for NVR)
   if (pageScreen === 'viewer' && activeCamera && plantData) {
+    if (activeCamera.type === 'nvr') {
+      return (
+        <StandardViewer
+          camera={activeCamera}
+          activeRecording={selectedRecording}
+          onClose={() => {
+            setPageScreen('grid');
+            setActiveCamera(null);
+            setSelectedRecording(null);
+          }}
+          onBackToRecordings={() => {
+            setPageScreen('recordings');
+          }}
+          currentDate={currentDate}
+          onOpenStickyNotes={() => setIsStickyNotesOpen(true)}
+        />
+      );
+    }
+    
     return (
       <Panorama360Viewer
         camera={activeCamera}
@@ -246,7 +266,7 @@ export function App() {
               }`}
             >
               <Video className="w-3.5 h-3.5" />
-              <span>RTSP Feeds ({plantData?.cameras.filter((c) => c.type === 'rtsp').length})</span>
+              <span>Fixed Cameras ({plantData?.cameras.filter((c) => c.type === 'rtsp' || c.type === 'nvr').length})</span>
             </button>
           </div>
 

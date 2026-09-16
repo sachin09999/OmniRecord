@@ -32,7 +32,8 @@ export interface Camera {
   rotateSpeed: number;
   rotateDirection: number;
   basePosition: number;
-  type?: '360' | 'rtsp';
+  type?: '360' | 'rtsp' | 'nvr';
+  nvrChannelId?: string; // e.g. "101" for Hikvision ISAPI trackID
   panoramaUrl?: string;
   thumbnailUrl?: string;
   isOnline?: boolean;
