@@ -1,0 +1,6 @@
+rtsp:
+  listen: ":8556"
+api:
+  listen: ":1984"
+webrtc:
+  listen: ":8555"
