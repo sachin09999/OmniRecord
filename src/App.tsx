@@ -221,23 +221,19 @@ export function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-5 py-5 flex flex-col gap-4">
-        {/* Simple Category Tabs (Only show in Grid view) */}
         {pageScreen === 'grid' && (
-          <div className={`flex items-center justify-between border-b pb-3 ${
-            theme === 'dark' ? 'border-slate-800' : 'border-gray-200'
-          }`}>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPageScreen('dashboard')}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 mr-2 ${
-                  theme === 'dark'
-                    ? 'text-slate-300 hover:text-white bg-slate-800/50 hover:bg-slate-800'
-                    : 'text-gray-600 hover:text-gray-900 bg-gray-100/50 hover:bg-gray-100'
-                }`}
-              >
-                <span>&larr; Dashboard</span>
-              </button>
-            </div>
+          <div className="flex items-center justify-between mb-2 mt-1">
+            <button
+              onClick={() => setPageScreen('dashboard')}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 shadow-sm border transition ${
+                theme === 'dark'
+                  ? 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700'
+                  : 'bg-white hover:bg-gray-50 text-gray-900 border-gray-200'
+              }`}
+            >
+              <span className="text-lg leading-none">&larr;</span>
+              <span>Back to Dashboard</span>
+            </button>
 
             <span className={`text-xs hidden sm:inline ${theme === 'dark' ? 'text-slate-500' : 'text-gray-500'}`}>
               Plant ID: <span className="font-mono">{plantData?._id}</span>
