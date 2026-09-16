@@ -359,6 +359,10 @@ function augmentPlantData(
     augmentedCameras = rawPlant.cameras.map(mapCamera);
   }
 
+  // Inject NVR cameras from our mock config because the Cupola backend doesn't know about them
+  const mockNvrCameras = getMockPlantData('mock', apiBaseUrl).cameras.filter((c) => c.type === 'nvr');
+  augmentedCameras = [...augmentedCameras, ...mockNvrCameras];
+
   return {
     ...rawPlant,
     renderFile: createProceduralFloorplan(),
