@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import type { Camera, CameraIcon, RecordingItem, Neighbors } from '../types/camera';
 import { fetchCameraRecordings, resolveApiUrl } from '../services/apiService';
 import { PlaybackTimeline } from './PlaybackTimeline';
+import ModernLoadingSpinner from './ModernLoadingSpinner';
 import {
   ChevronLeft,
   Camera as CameraIconLucide,
@@ -56,6 +57,7 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
   const [recordingSeconds, setRecordingSeconds] = useState<number>(0);
   const [hoveredHotspot, setHoveredHotspot] = useState<CameraIcon | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
+  const [isWebRTCPlaying, setIsWebRTCPlaying] = useState<boolean>(false);
 
   const [recordings, setRecordings] = useState<RecordingItem[]>([]);
   const [neighbors, setNeighbors] = useState<Neighbors>({ previous: null, next: null });
@@ -164,6 +166,18 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
           }
         };
 
+        video.onplaying = () => {
+          console.log('[OmniRecord Live] WebRTC video is playing, switching texture and stopping historical placeholder.');
+          setIsWebRTCPlaying(true);
+          
+          const videoTexture = new THREE.VideoTexture(video);
+          videoTexture.colorSpace = THREE.SRGBColorSpace;
+          if (sphereMeshRef.current) {
+            (sphereMeshRef.current.material as THREE.MeshBasicMaterial).map = videoTexture;
+            (sphereMeshRef.current.material as THREE.MeshBasicMaterial).needsUpdate = true;
+          }
+        };
+
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
 
@@ -200,14 +214,6 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
     startWebRTC();
     setVideoElement(video);
 
-    const videoTexture = new THREE.VideoTexture(video);
-    videoTexture.colorSpace = THREE.SRGBColorSpace;
-
-    if (sphereMeshRef.current) {
-      (sphereMeshRef.current.material as THREE.MeshBasicMaterial).map = videoTexture;
-      (sphereMeshRef.current.material as THREE.MeshBasicMaterial).needsUpdate = true;
-    }
-
     return () => {
       if (pc) {
         pc.close();
@@ -219,9 +225,9 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
     };
   }, [isLiveMode, camera]);
 
-  // Historical Recording Playback
+  // Historical Recording Playback (also used as placeholder while WebRTC loads)
   useEffect(() => {
-    if (isLiveMode) return; // Skip if in live mode, handled by WebRTC effect
+    if (isWebRTCPlaying) return; // Skip if WebRTC is actively playing
     if (!selectedRecording || (!selectedRecording.videoPath && !selectedRecording.videoUrl)) return;
 
     const fullVideoUrl = selectedRecording.videoUrl || resolveApiUrl(apiBaseUrl, selectedRecording.videoPath!);
@@ -623,6 +629,13 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
       >
         <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
+        {isLiveMode && !isWebRTCPlaying && (
+          <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-[#0A0C0E]/40 backdrop-blur-sm pointer-events-none">
+            <ModernLoadingSpinner />
+            <span className="mt-4 text-sm font-semibold text-white animate-pulse">Connecting to Zero-Latency Live Stream...</span>
+          </div>
+        )}
+
         {hoveredHotspot && (
           <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 bg-[#181B20]/95 border border-[#2E3440] text-white rounded-xl px-4 py-2 shadow-2xl flex items-center gap-2 pointer-events-none backdrop-blur-md">
             <span className="text-xs text-gray-200 font-medium">Switch to: {hoveredHotspot.cameraPath}</span>
@@ -699,8 +712,10 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
           onClick={() => {
             if (isLiveMode) {
               setIsLiveMode(false);
+              setIsWebRTCPlaying(false);
             } else {
               setIsLiveMode(true);
+              setIsWebRTCPlaying(false);
               if (recordings && recordings.length > 0) {
                 // Select newest / latest clip (recordings[0]) for current live feed
                 setSelectedRecording(recordings[0]);
