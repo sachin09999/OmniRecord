@@ -22,7 +22,7 @@ export default defineConfig({
         secure: false,
       },
       '/api/webrtc': {
-        target: 'http://127.0.0.1:1984',
+        target: 'http://go2rtc:1984',
         changeOrigin: true,
         secure: false,
       },
