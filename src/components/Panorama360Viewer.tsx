@@ -170,8 +170,8 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
         // Fetch WebRTC answer using the registered stream name
         const res = await fetch(`/api/webrtc?src=${encodeURIComponent(streamName)}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({ type: offer.type, sdp: offer.sdp || '' })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: offer.type, sdp: offer.sdp || '' })
         });
 
         if (!res.ok) {
@@ -180,8 +180,18 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
           throw new Error(`go2rtc returned HTTP ${res.status}: ${errorText}`);
         }
         
-        const sdpAnswer = await res.text();
-        await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: sdpAnswer }));
+        const resText = await res.text();
+        let sdpAnswer = resText;
+        try {
+          const json = JSON.parse(resText);
+          if (json && json.sdp) {
+            sdpAnswer = json.sdp;
+          }
+        } catch (e) {
+          // Response is plain text SDP
+        }
+        
+        await pc.setRemoteDescription({ type: 'answer', sdp: sdpAnswer });
       } catch (err) {
         console.error('[OmniRecord Live] WebRTC connection failed:', err);
       }
