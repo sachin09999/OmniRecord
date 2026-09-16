@@ -106,53 +106,43 @@ export const StandardViewer: React.FC<StandardViewerProps> = ({
           console.error('[NVR Viewer] Failed to register stream with go2rtc:', await putRes.text());
         }
 
-        // 3. Start Streaming
-        if (isLiveMode) {
-          pc.addTransceiver('video', { direction: 'recvonly' });
+        // 3. Negotiate WebRTC connection
+        pc.addTransceiver('video', { direction: 'recvonly' });
 
-          pc.ontrack = (event) => {
-            if (video.srcObject !== event.streams[0]) {
-              video.srcObject = event.streams[0];
-              video.play().catch(e => console.warn('Autoplay prevented:', e));
-            }
-          };
-
-          video.onplaying = () => {
-            setIsWebRTCPlaying(true);
-          };
-
-          const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
-
-          const res = await fetch(`/api/webrtc?src=${encodeURIComponent(streamName)}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: offer.type, sdp: offer.sdp || '' })
-          });
-
-          if (!res.ok) {
-            throw new Error(`go2rtc returned HTTP ${res.status}: ${await res.text()}`);
+        pc.ontrack = (event) => {
+          if (video.srcObject !== event.streams[0]) {
+            video.srcObject = event.streams[0];
+            video.play().catch(e => console.warn('Autoplay prevented:', e));
           }
-          
-          const resText = await res.text();
-          let sdpAnswer = resText;
-          try {
-            const json = JSON.parse(resText);
-            if (json && json.sdp) sdpAnswer = json.sdp;
-          } catch (e) {
-            // ignore
-          }
-          
-          await pc.setRemoteDescription({ type: 'answer', sdp: sdpAnswer });
-        } else {
-          // Playback Mode: Use MP4 streaming for zero-negotiation latency & much lower CPU
-          video.srcObject = null;
-          video.src = `/api/stream.mp4?src=${encodeURIComponent(streamName)}`;
-          video.onplaying = () => {
-            setIsWebRTCPlaying(true); // Re-use state to hide the loading spinner
-          };
-          video.play().catch(e => console.warn('MP4 Autoplay prevented:', e));
+        };
+
+        video.onplaying = () => {
+          setIsWebRTCPlaying(true);
+        };
+
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+
+        const res = await fetch(`/api/webrtc?src=${encodeURIComponent(streamName)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: offer.type, sdp: offer.sdp || '' })
+        });
+
+        if (!res.ok) {
+          throw new Error(`go2rtc returned HTTP ${res.status}: ${await res.text()}`);
         }
+        
+        const resText = await res.text();
+        let sdpAnswer = resText;
+        try {
+          const json = JSON.parse(resText);
+          if (json && json.sdp) sdpAnswer = json.sdp;
+        } catch (e) {
+          // ignore
+        }
+        
+        await pc.setRemoteDescription({ type: 'answer', sdp: sdpAnswer });
       } catch (err) {
         console.error('[NVR Viewer] Connection failed:', err);
       }
