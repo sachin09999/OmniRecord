@@ -10,35 +10,41 @@ export const fetchNvrRecordings = async (
   endTime: Date
 ): Promise<RecordingItem[]> => {
   try {
-    // Basic Auth credentials - using placeholders per user's request
-    // We base64 encode them for the Authorization header
-    const authString = btoa(`admin:YOUR_NVR_PASSWORD_HERE`);
+    const authString = btoa(`admin:16@SnV?cR1`);
     
-    // Construct the ISAPI XML search request
-    // The Hikvision API expects time in format like 2026-09-15T10:00:00Z
-    const xmlPayload = `<?xml version="1.0" encoding="UTF-8"?>
-<CMSearchDescription version="2.0" xmlns="http://www.isapi.org/ver20/XMLSchema">
-    <searchID>${crypto.randomUUID().toUpperCase()}</searchID>
-    <trackIDList>
-        <trackID>${trackID}</trackID>
-    </trackIDList>
-    <timeSpanList>
-        <timeSpan>
-            <startTime>${startTime.toISOString()}</startTime>
-            <endTime>${endTime.toISOString()}</endTime>
-        </timeSpan>
-    </timeSpanList>
-    <maxResults>200</maxResults>
-    <searchResultPostion>0</searchResultPostion>
-</CMSearchDescription>`;
+    // Construct the ISAPI JSON search request
+    const jsonPayload = {
+      SearchDescription: {
+        searchID: crypto.randomUUID().toUpperCase(),
+        searchResultPosition: 0,
+        maxResults: 200,
+        SearchCondList: [
+          {
+            channelID: parseInt(trackID, 10),
+            // Including "human" and "vehicle" as per the user's example, although omitting it might fetch everything.
+            // Let's use the exact format requested.
+            targetTypes: ["human", "vehicle"],
+            searchTimeList: [
+              {
+                searchTime: {
+                  startTime: startTime.toISOString(),
+                  endTime: endTime.toISOString()
+                }
+              }
+            ]
+          }
+        ]
+      }
+    };
 
-    const res = await fetch('/api/nvr/ISAPI/ContentMgmt/search', {
+    // Note: The endpoint changes from /search to /SearchByTargetType?format=json
+    const res = await fetch('/api/nvr/ISAPI/ContentMgmt/SearchByTargetType?format=json', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/xml',
+        'Content-Type': 'application/json',
         'Authorization': `Basic ${authString}`
       },
-      body: xmlPayload
+      body: JSON.stringify(jsonPayload)
     });
 
     if (!res.ok) {
@@ -46,23 +52,15 @@ export const fetchNvrRecordings = async (
       return [];
     }
 
-    const xmlResponseText = await res.text();
-    
-    // Parse the XML response natively using DOMParser
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlResponseText, 'application/xml');
-    
+    const data = await res.json();
     const recordings: RecordingItem[] = [];
-    
-    // Search elements <searchMatchItem>
-    const matchItems = xmlDoc.getElementsByTagName('searchMatchItem');
-    
-    for (let i = 0; i < matchItems.length; i++) {
-      const item = matchItems[i];
-      const timeSpan = item.getElementsByTagName('timeSpan')[0];
-      if (timeSpan) {
-        const itemStart = timeSpan.getElementsByTagName('startTime')[0]?.textContent;
-        const itemEnd = timeSpan.getElementsByTagName('endTime')[0]?.textContent;
+    const matchList = data.SearchResult?.matchList || [];
+
+    for (const match of matchList) {
+      const recordInfos = match.RecordInfoList || [];
+      for (const info of recordInfos) {
+        const itemStart = info.RecordTime?.startTime;
+        const itemEnd = info.RecordTime?.endTime;
         
         if (itemStart && itemEnd) {
           recordings.push({
