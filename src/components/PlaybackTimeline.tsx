@@ -71,6 +71,7 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
     if (!isoStr) return 0;
     try {
       const d = new Date(isoStr);
+      if (isNaN(d.getTime())) return 0;
       return d.getUTCHours() * 3600 + d.getUTCMinutes() * 60 + d.getUTCSeconds();
     } catch {
       return 0;
@@ -178,7 +179,8 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
 
     if (camera?.type === 'nvr') {
       if (isFinalCommit && onSelectRecording && activeRecording) {
-         const newIso = `${currentDate}T${formatTimeStr(clampedSecs)}Z`;
+         const formattedDate = currentDate.replace(/\//g, '-');
+         const newIso = `${formattedDate}T${formatTimeStr(clampedSecs)}Z`;
          onSelectRecording({
            ...activeRecording,
            startTime: newIso
@@ -316,16 +318,8 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
   };
 
   const formattedDisplayTime = useMemo(() => {
-    const d = new Date(currentDate);
-    // Convert currentSeconds into MS and add to day start
-    const ms = d.getTime();
-    const displayDate = new Date(ms + currentSeconds * 1000);
-    const h = String(displayDate.getUTCHours()).padStart(2, '0');
-    const m = String(displayDate.getUTCMinutes()).padStart(2, '0');
-    const s = String(displayDate.getUTCSeconds()).padStart(2, '0');
-    
-    return `${h}:${m}:${s}`;
-  }, [currentDate, currentSeconds]);
+    return formatTimeStr(currentSeconds);
+  }, [currentSeconds]);
 
   const recordingBlocks = useMemo(() => {
     return recordings.map((rec, idx) => {
