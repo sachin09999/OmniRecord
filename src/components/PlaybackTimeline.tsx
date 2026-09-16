@@ -18,6 +18,13 @@ import {
   Check
 } from 'lucide-react';
 
+const formatTimeStr = (totalSecs: number): string => {
+  const h = String(Math.floor(totalSecs / 3600) % 24).padStart(2, '0');
+  const m = String(Math.floor((totalSecs % 3600) / 60)).padStart(2, '0');
+  const s = String(Math.floor(totalSecs % 60)).padStart(2, '0');
+  return `${h}:${m}:${s}`;
+};
+
 interface PlaybackTimelineProps {
   currentDate: string;
   recordings?: RecordingItem[];
@@ -165,9 +172,20 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
     container.scrollLeft = Math.max(0, targetScrollLeft);
   }, [currentSeconds, zoomScale]);
 
-  const seekToSeconds = useCallback((newSecs: number) => {
+  const seekToSeconds = useCallback((newSecs: number, isFinalCommit: boolean = true) => {
     const clampedSecs = Math.max(0, Math.min(86400, newSecs));
     setCurrentSeconds(clampedSecs);
+
+    if (camera?.type === 'nvr') {
+      if (isFinalCommit && onSelectRecording && activeRecording) {
+         const newIso = `${currentDate}T${formatTimeStr(clampedSecs)}Z`;
+         onSelectRecording({
+           ...activeRecording,
+           startTime: newIso
+         });
+      }
+      return;
+    }
 
     if (recordings && recordings.length > 0) {
       const matchingRec = recordings.find((rec) => {
@@ -191,7 +209,7 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
         videoElement.currentTime = relativeTime;
       }
     }
-  }, [recordings, activeRecording, videoElement, onSelectRecording, getSecondsFromIso]);
+  }, [recordings, activeRecording, videoElement, onSelectRecording, getSecondsFromIso, camera, currentDate]);
 
   // Smooth Mouse Wheel Scrubbing & Pinch Zooming
   useEffect(() => {
@@ -220,7 +238,13 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
       const stepSecs = Math.max(1, Math.round(Math.abs(rawDelta) * 0.08 * scaleFactor));
       const targetSecs = Math.max(0, Math.min(86400, currentSecondsRef.current + direction * stepSecs));
 
-      seekToSeconds(targetSecs);
+      seekToSeconds(targetSecs, false);
+      
+      // Debounce commit for wheel
+      if ((window as any)._wheelSeekTimer) clearTimeout((window as any)._wheelSeekTimer);
+      (window as any)._wheelSeekTimer = setTimeout(() => {
+        seekToSeconds(targetSecs, true);
+      }, 300);
     };
 
     container.addEventListener('wheel', handleWheel, { passive: false });
@@ -244,7 +268,7 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
     e.currentTarget.setPointerCapture(e.pointerId);
     setIsDragging(true);
     const secs = getSecondsFromPointer(e);
-    seekToSeconds(secs);
+    seekToSeconds(secs, false);
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -252,12 +276,14 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
     setHoveredSeconds(secs);
 
     if (isDragging) {
-      seekToSeconds(secs);
+      seekToSeconds(secs, false);
     }
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (isDragging) {
+      const secs = getSecondsFromPointer(e);
+      seekToSeconds(secs, true);
       try {
         e.currentTarget.releasePointerCapture(e.pointerId);
       } catch {
@@ -286,21 +312,13 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
   };
 
   const handleSeekDelta = (delta: number) => {
-    seekToSeconds(currentSeconds + delta);
-  };
-
-  const formatTimeStr = (totalSecs: number): string => {
-    const h = String(Math.floor(totalSecs / 3600) % 24).padStart(2, '0');
-    const m = String(Math.floor((totalSecs % 3600) / 60)).padStart(2, '0');
-    const s = String(Math.floor(totalSecs % 60)).padStart(2, '0');
-    return `${h}:${m}:${s}`;
+    seekToSeconds(currentSeconds + delta, true);
   };
 
   const formattedDisplayTime = useMemo(() => {
     const d = new Date(currentDate);
+    // Convert currentSeconds into MS and add to day start
     const ms = d.getTime();
-    if (isNaN(ms)) return "00:00:00";
-    
     const displayDate = new Date(ms + currentSeconds * 1000);
     const h = String(displayDate.getUTCHours()).padStart(2, '0');
     const m = String(displayDate.getUTCMinutes()).padStart(2, '0');

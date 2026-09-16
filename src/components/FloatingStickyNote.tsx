@@ -16,9 +16,9 @@ interface FloatingStickyNoteProps {
 export const FloatingStickyNote: React.FC<FloatingStickyNoteProps> = ({
   isOpen,
   onClose,
-  stickyNotes: _stickyNotes,
+  stickyNotes,
   onAddNote,
-  onDeleteNote: _onDeleteNote,
+  onDeleteNote,
   cameras,
   activeCamera,
   currentDate,
@@ -81,9 +81,7 @@ export const FloatingStickyNote: React.FC<FloatingStickyNoteProps> = ({
       author: 'Patrol Operator',
       color: (noteColor === 'pink' ? 'yellow' : noteColor) as any, // fallback if pink is not in type
     });
-    
     setText('');
-    onClose();
   };
 
   const getBgColor = () => {
@@ -144,21 +142,44 @@ export const FloatingStickyNote: React.FC<FloatingStickyNoteProps> = ({
       {/* Content Area */}
       {!isMinimized && (
         <div className="flex flex-col h-[380px]">
-          <div className="flex-1 p-4 flex flex-col">
+          <div className="flex-1 p-4 flex flex-col overflow-hidden">
             <h3 className="font-semibold text-[15px] text-black/80 mb-2">{currentDate}</h3>
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="1. Omni Record Webpage Development..."
-              className="flex-1 w-full bg-transparent resize-none outline-none text-[15px] leading-relaxed placeholder-black/30 text-black/90 font-medium"
-              autoFocus
-            />
+            
+            <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-3">
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder="Type a new note here..."
+                className="w-full bg-black/5 rounded-lg p-2 resize-none outline-none text-[14px] leading-relaxed placeholder-black/40 text-black/90 font-medium min-h-[80px]"
+                autoFocus
+              />
+              
+              {/* History of notes for this camera */}
+              {stickyNotes
+                .filter((n: StickyNote) => n.cameraId === (activeCamera?._id || 'unknown'))
+                .map((note: StickyNote) => (
+                  <div key={note.id} className="bg-black/5 rounded p-3 relative group">
+                    <p className="text-[13px] text-black/80 leading-relaxed whitespace-pre-wrap pr-6">{note.text}</p>
+                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-black/5">
+                      <span className="text-[10px] font-bold text-black/40 uppercase">{note.timestamp}</span>
+                      <span className="text-[10px] font-bold text-black/40 uppercase">{note.author}</span>
+                    </div>
+                    <button 
+                      onClick={() => onDeleteNote(note.id)}
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition p-1 hover:bg-black/10 rounded"
+                      title="Delete Note"
+                    >
+                      <X className="w-3 h-3 text-black/60" />
+                    </button>
+                  </div>
+              ))}
+            </div>
           </div>
 
           {/* Bottom Bar */}
-          <div className="h-10 px-4 flex items-center justify-between border-t border-black/5 bg-black/5">
+          <div className="h-10 px-4 flex items-center justify-between border-t border-black/5 bg-black/5 shrink-0">
             <div className="flex items-center gap-2">
-              <button title="Save Note" onClick={handleSubmit} className="flex items-center gap-1 text-[11px] font-bold text-black/60 hover:text-black/90 transition px-2 py-1 rounded bg-black/5">
+              <button title="Save Note" onClick={handleSubmit} className="flex items-center gap-1 text-[11px] font-bold text-black/60 hover:text-black/90 transition px-2 py-1 rounded bg-black/5 shadow-sm border border-black/10">
                 <Plus className="w-3 h-3" /> SAVE
               </button>
             </div>
