@@ -630,9 +630,8 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
         <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
         {isLiveMode && !isWebRTCPlaying && (
-          <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-[#0A0C0E]/40 backdrop-blur-sm pointer-events-none">
-            <ModernLoadingSpinner />
-            <span className="mt-4 text-sm font-semibold text-white animate-pulse">Connecting to Zero-Latency Live Stream...</span>
+          <div className="absolute inset-0 z-40 flex items-center justify-center bg-[#0A0C0E]/40 backdrop-blur-sm pointer-events-none">
+            <ModernLoadingSpinner label="Loading Stream..." sublabel="" />
           </div>
         )}
 
