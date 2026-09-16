@@ -78,22 +78,25 @@ export const StandardViewer: React.FC<StandardViewerProps> = ({
       try {
         setIsWebRTCPlaying(false);
         
-        // 1. Determine the RTSP URL based on Live vs Historical mode
+        // Hikvision RTSP channels usually require '01' suffix for main stream (e.g., '4' -> '401')
+        const rawChan = camera.nvrChannelId || '1';
+        const rtspChan = rawChan.length < 3 ? `${rawChan}01` : rawChan;
+        
         let rtspUrl = '';
         if (isLiveMode) {
           // Live NVR stream
-          rtspUrl = `rtsp://admin:16%40SnV%3FcR1@10.10.12.2:554/Streaming/Channels/${camera.nvrChannelId || '101'}`;
+          rtspUrl = `rtsp://admin:16%40SnV%3FcR1@10.10.12.2:554/Streaming/Channels/${rtspChan}`;
         } else if (selectedRecording) {
           // Historical NVR playback stream (convert 2026-09-15T10:00:00Z to 20260915T100000Z)
           const startStr = selectedRecording.startTime?.replace(/[-:]/g, '') || '';
           const endStr = selectedRecording.endTime?.replace(/[-:]/g, '') || '';
-          rtspUrl = `rtsp://admin:16%40SnV%3FcR1@10.10.12.2:554/Streaming/tracks/${camera.nvrChannelId || '101'}?starttime=${startStr}&endtime=${endStr}`;
+          rtspUrl = `rtsp://admin:16%40SnV%3FcR1@10.10.12.2:554/Streaming/tracks/${rtspChan}?starttime=${startStr}&endtime=${endStr}`;
         } else {
           return;
         }
 
         // 2. Register stream with go2rtc dynamically
-        const streamName = `nvr_${camera.nvrChannelId || '101'}_${isLiveMode ? 'live' : 'playback'}`;
+        const streamName = `nvr_${rawChan}_${isLiveMode ? 'live' : 'playback'}`;
         const putRes = await fetch(`/api/streams?src=${encodeURIComponent(rtspUrl)}&name=${encodeURIComponent(streamName)}`, {
           method: 'PUT'
         });
