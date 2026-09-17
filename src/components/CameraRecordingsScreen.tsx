@@ -280,15 +280,15 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
       const ss2 = String(dEnd.getSeconds()).padStart(2, '0');
       const endStr = `${yyyy2}${mm2}${dd2}T${hh2}${mi2}${ss2}Z`;
 
-      // NVR ISAPI ContentMgmt expects the raw playbackURI without embedded credentials.
-      // Use the exact playbackURI provided by the NVR if available, otherwise fallback.
-      const exactPlaybackUri = rec.videoPath && rec.videoPath.includes('rtsp://') 
+      // For NVR cameras, Hikvision's direct ISAPI download GET endpoint is notoriously flaky
+      // or requires POST/XML depending on the firmware version.
+      // Instead, we use go2rtc's real-time MP4 stream. Since we now use native browser downloading (no RAM buffering),
+      // the fragmented MP4 (fMP4) will stream directly to disk and be instantly playable!
+      const rtspPlaybackUri = rec.videoPath && rec.videoPath.includes('rtsp://') 
         ? rec.videoPath 
-        : `rtsp://10.10.12.2:554/Streaming/tracks/${rtspChan}?starttime=${startStr}&endtime=${endStr}`;
+        : `rtsp://admin:16%40SnV%3FcR1@10.10.12.2:554/Streaming/tracks/${rtspChan}?starttime=${startStr}&endtime=${endStr}`;
       
-      // Proxy the request through our backend so that Basic Auth headers are injected automatically.
-      // (Directly hitting the NVR causes Chrome to strip embedded passwords and fail with 401 Unauthorized).
-      return `/api/nvr/ISAPI/ContentMgmt/download?playbackURI=${encodeURIComponent(exactPlaybackUri)}`;
+      return `/api/stream.mp4?src=${encodeURIComponent(rtspPlaybackUri)}`;
     }
 
     // We explicitly construct the ABSOLUTE URL here to completely bypass the Vite proxy.
