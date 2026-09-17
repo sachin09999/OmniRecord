@@ -285,12 +285,17 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
       return `/api/nvr/ISAPI/ContentMgmt/download?playbackURI=${encodeURIComponent(rtspUrl)}`;
     }
 
-    const baseVidUrl = rec.videoUrl || (rec.videoPath ? resolveApiUrl(apiBaseUrl, rec.videoPath) : '');
-    if (!baseVidUrl) return '';
-    // Append token to bypass 401 errors on native browser downloads
-    return baseVidUrl.includes('?') 
-      ? `${baseVidUrl}&token=${encodeURIComponent(authToken)}` 
-      : `${baseVidUrl}?token=${encodeURIComponent(authToken)}`;
+    // We explicitly construct the ABSOLUTE URL here to completely bypass the Vite proxy.
+    // The Vite dev server's http-proxy drops long-running large MP4 transfers midway,
+    // which causes the native browser downloader to mark the download as 'Failed: Site wasn't available'.
+    const cleanPath = rec.videoPath.startsWith('/') ? rec.videoPath : `/${rec.videoPath}`;
+    const cleanBase = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
+    const absoluteVidUrl = rec.videoUrl || `${cleanBase}${cleanPath}`;
+
+    // Append token to bypass 401 errors on direct backend requests
+    return absoluteVidUrl.includes('?') 
+      ? `${absoluteVidUrl}&token=${encodeURIComponent(authToken)}` 
+      : `${absoluteVidUrl}?token=${encodeURIComponent(authToken)}`;
   };
 
   return (
