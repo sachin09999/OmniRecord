@@ -254,6 +254,40 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
     return rec.videoUrl || (rec.videoPath ? resolveApiUrl(apiBaseUrl, rec.videoPath) : '');
   };
 
+  const getVideoDownloadUrl = (rec?: RecordingItem): string => {
+    if (!rec) return '';
+
+    if (camera.type === 'nvr' || (rec._id && rec._id.startsWith('nvr-'))) {
+      const rawChan = camera.nvrChannelId || '1';
+      const rtspChan = rawChan.length < 3 ? `${rawChan}01` : rawChan;
+      
+      const dStart = new Date(rec.startTime || selectedDate);
+      const dEnd = rec.endTime ? new Date(rec.endTime) : new Date(dStart.getTime() + (rec.duration || 3600) * 1000);
+      
+      const yyyy1 = dStart.getFullYear();
+      const mm1 = String(dStart.getMonth() + 1).padStart(2, '0');
+      const dd1 = String(dStart.getDate()).padStart(2, '0');
+      const hh1 = String(dStart.getHours()).padStart(2, '0');
+      const mi1 = String(dStart.getMinutes()).padStart(2, '0');
+      const ss1 = String(dStart.getSeconds()).padStart(2, '0');
+      const startStr = `${yyyy1}${mm1}${dd1}T${hh1}${mi1}${ss1}Z`;
+
+      const yyyy2 = dEnd.getFullYear();
+      const mm2 = String(dEnd.getMonth() + 1).padStart(2, '0');
+      const dd2 = String(dEnd.getDate()).padStart(2, '0');
+      const hh2 = String(dEnd.getHours()).padStart(2, '0');
+      const mi2 = String(dEnd.getMinutes()).padStart(2, '0');
+      const ss2 = String(dEnd.getSeconds()).padStart(2, '0');
+      const endStr = `${yyyy2}${mm2}${dd2}T${hh2}${mi2}${ss2}Z`;
+
+      const rtspUrl = `rtsp://admin:16%40SnV%3FcR1@10.10.12.2:554/Streaming/tracks/${rtspChan}?starttime=${startStr}&endtime=${endStr}`;
+      // Use the ISAPI direct download API instead of the real-time transcoding stream
+      return `/api/nvr/ISAPI/ContentMgmt/download?playbackURI=${encodeURIComponent(rtspUrl)}`;
+    }
+
+    return rec.videoUrl || (rec.videoPath ? resolveApiUrl(apiBaseUrl, rec.videoPath) : '');
+  };
+
   return (
     <div className={`flex flex-col min-h-screen font-sans transition-colors ${
       isDark ? 'bg-slate-950 text-slate-100' : 'bg-gray-50 text-gray-900'
@@ -433,6 +467,7 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
               const firstClip = group.clips[0];
               const thumbUrl = resolveRecordingThumbnailUrl(apiBaseUrl, firstClip, authToken);
               const mediaUrl = getVideoMediaUrl(firstClip);
+              const downloadUrl = getVideoDownloadUrl(firstClip);
               const isGroupActive = Boolean(activeRecording && group.clips.some(c => c._id === activeRecording._id));
 
               return (
@@ -506,9 +541,9 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2">
-                      {mediaUrl && (
+                      {downloadUrl && (
                         <button
-                          onClick={(e) => handleStartDownload(e, mediaUrl, `OmniRecord_${camera.name}_${group.hourLabel.replace(/:/g, '-')}.mp4`)}
+                          onClick={(e) => handleStartDownload(e, downloadUrl, `OmniRecord_${camera.name}_${group.hourLabel.replace(/:/g, '-')}.mp4`)}
                           className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 border shadow-sm ${
                             isDark
                               ? 'bg-emerald-950/70 hover:bg-emerald-900 text-emerald-300 border-emerald-700/60'
@@ -541,6 +576,7 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
               const firstClip = group.clips[0];
               const thumbUrl = resolveRecordingThumbnailUrl(apiBaseUrl, firstClip, authToken);
               const mediaUrl = getVideoMediaUrl(firstClip);
+              const downloadUrl = getVideoDownloadUrl(firstClip);
 
               return (
                 <div
@@ -586,10 +622,10 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    {mediaUrl && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    {downloadUrl && (
                       <button
-                        onClick={(e) => handleStartDownload(e, mediaUrl, `OmniRecord_${camera.name}_${group.hourLabel.replace(/:/g, '-')}.mp4`)}
+                        onClick={(e) => handleStartDownload(e, downloadUrl, `OmniRecord_${camera.name}_${group.hourLabel.replace(/:/g, '-')}.mp4`)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 border shadow-sm ${
                           isDark
                             ? 'bg-emerald-950/70 hover:bg-emerald-900 text-emerald-300 border-emerald-700/60'

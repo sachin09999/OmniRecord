@@ -756,39 +756,24 @@ export async function downloadVideoFile(url: string, filename: string): Promise<
   const cleanFilename = filename.endsWith('.mp4') ? filename : `${filename}.mp4`;
 
   try {
-    console.log(`[OmniRecord Download] Initiating in-place MP4 download for: ${url}`);
-    const response = await fetch(url, { credentials: 'same-origin' });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    const blob = await response.blob();
-    const mp4Blob = new Blob([blob], { type: 'video/mp4' });
-    const objectUrl = URL.createObjectURL(mp4Blob);
-
-    const a = document.createElement('a');
-    a.style.display = 'none';
-    a.href = objectUrl;
-    a.download = cleanFilename;
-    document.body.appendChild(a);
-    a.click();
-
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(objectUrl);
-    }, 200);
-
-    return true;
-  } catch (err) {
-    console.warn('[OmniRecord Download] In-place fetch failed, using fallback anchor:', err);
+    console.log(`[OmniRecord Download] Initiating native browser download for: ${url}`);
+    
+    // Create an invisible anchor tag to trigger native browser download.
+    // This avoids fetching massive video files into browser RAM (which causes crashes and unplayable MP4s).
     const a = document.createElement('a');
     a.style.display = 'none';
     a.href = url;
     a.download = cleanFilename;
     document.body.appendChild(a);
     a.click();
+    
     setTimeout(() => {
       if (document.body.contains(a)) document.body.removeChild(a);
-    }, 200);
+    }, 500);
+
+    return true;
+  } catch (err) {
+    console.error('[OmniRecord Download] Failed to initiate download:', err);
     return false;
   }
 }
