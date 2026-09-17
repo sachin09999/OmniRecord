@@ -288,9 +288,14 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
     // We explicitly construct the ABSOLUTE URL here to completely bypass the Vite proxy.
     // The Vite dev server's http-proxy drops long-running large MP4 transfers midway,
     // which causes the native browser downloader to mark the download as 'Failed: Site wasn't available'.
-    const cleanPath = rec.videoPath.startsWith('/') ? rec.videoPath : `/${rec.videoPath}`;
-    const cleanBase = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
-    const absoluteVidUrl = rec.videoUrl || `${cleanBase}${cleanPath}`;
+    let absoluteVidUrl = rec.videoUrl || '';
+    if (!absoluteVidUrl && rec.videoPath) {
+      const cleanPath = rec.videoPath.startsWith('/') ? rec.videoPath : `/${rec.videoPath}`;
+      const cleanBase = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
+      absoluteVidUrl = `${cleanBase}${cleanPath}`;
+    }
+
+    if (!absoluteVidUrl) return '';
 
     // Append token to bypass 401 errors on direct backend requests
     return absoluteVidUrl.includes('?') 
