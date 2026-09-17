@@ -223,6 +223,34 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
   // Helper function to resolve video media source URL
   const getVideoMediaUrl = (rec?: RecordingItem): string => {
     if (!rec) return '';
+
+    if (camera.type === 'nvr' || (rec._id && rec._id.startsWith('nvr-'))) {
+      const rawChan = camera.nvrChannelId || '1';
+      const rtspChan = rawChan.length < 3 ? `${rawChan}01` : rawChan;
+      
+      const dStart = new Date(rec.startTime || selectedDate);
+      const dEnd = rec.endTime ? new Date(rec.endTime) : new Date(dStart.getTime() + (rec.duration || 3600) * 1000);
+      
+      const yyyy1 = dStart.getFullYear();
+      const mm1 = String(dStart.getMonth() + 1).padStart(2, '0');
+      const dd1 = String(dStart.getDate()).padStart(2, '0');
+      const hh1 = String(dStart.getHours()).padStart(2, '0');
+      const mi1 = String(dStart.getMinutes()).padStart(2, '0');
+      const ss1 = String(dStart.getSeconds()).padStart(2, '0');
+      const startStr = `${yyyy1}${mm1}${dd1}T${hh1}${mi1}${ss1}Z`;
+
+      const yyyy2 = dEnd.getFullYear();
+      const mm2 = String(dEnd.getMonth() + 1).padStart(2, '0');
+      const dd2 = String(dEnd.getDate()).padStart(2, '0');
+      const hh2 = String(dEnd.getHours()).padStart(2, '0');
+      const mi2 = String(dEnd.getMinutes()).padStart(2, '0');
+      const ss2 = String(dEnd.getSeconds()).padStart(2, '0');
+      const endStr = `${yyyy2}${mm2}${dd2}T${hh2}${mi2}${ss2}Z`;
+
+      const rtspUrl = `rtsp://admin:16%40SnV%3FcR1@10.10.12.2:554/Streaming/tracks/${rtspChan}?starttime=${startStr}&endtime=${endStr}`;
+      return `/api/stream.mp4?src=${encodeURIComponent(rtspUrl)}`;
+    }
+
     return rec.videoUrl || (rec.videoPath ? resolveApiUrl(apiBaseUrl, rec.videoPath) : '');
   };
 

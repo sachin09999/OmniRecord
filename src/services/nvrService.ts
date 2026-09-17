@@ -4,14 +4,14 @@ import type { RecordingItem } from '../types/camera';
  * Searches for recording segments on a Hikvision NVR for a specific camera (trackID).
  * It uses the ISAPI XML ContentMgmt search endpoint.
  */
-// Helper to format Date into UTC ISO string like YYYY-MM-DDTHH:mm:ssZ for Hikvision
+// Helper to format Date into local time string like YYYY-MM-DDTHH:mm:ssZ for Hikvision
 const formatHikTime = (d: Date) => {
-  const yyyy = d.getUTCFullYear();
-  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(d.getUTCDate()).padStart(2, '0');
-  const hh = String(d.getUTCHours()).padStart(2, '0');
-  const mi = String(d.getUTCMinutes()).padStart(2, '0');
-  const ss = String(d.getUTCSeconds()).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  const ss = String(d.getSeconds()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}Z`;
 };
 
@@ -69,9 +69,10 @@ export const fetchNvrRecordings = async (
         const itemStart = timeSpan.getElementsByTagName('startTime')[0]?.textContent;
         const itemEnd = timeSpan.getElementsByTagName('endTime')[0]?.textContent;
         if (itemStart && itemEnd) {
+          // NVR returns local time but appends 'Z'. Strip 'Z' so JS Date parses it as local time.
           rawChunks.push({
-            start: new Date(itemStart),
-            end: new Date(itemEnd)
+            start: new Date(itemStart.replace('Z', '')),
+            end: new Date(itemEnd.replace('Z', ''))
           });
         }
       }
