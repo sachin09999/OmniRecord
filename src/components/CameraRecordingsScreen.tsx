@@ -280,9 +280,11 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
       const ss2 = String(dEnd.getSeconds()).padStart(2, '0');
       const endStr = `${yyyy2}${mm2}${dd2}T${hh2}${mi2}${ss2}Z`;
 
-      const rtspUrl = `rtsp://admin:16%40SnV%3FcR1@10.10.12.2:554/Streaming/tracks/${rtspChan}?starttime=${startStr}&endtime=${endStr}`;
+      // NVR ISAPI ContentMgmt expects the raw playbackURI without embedded credentials
+      const rtspPlaybackUri = `rtsp://10.10.12.2:554/Streaming/tracks/${rtspChan}?starttime=${startStr}&endtime=${endStr}`;
+      
       // Use the ISAPI direct download API instead of the real-time transcoding stream
-      return `/api/nvr/ISAPI/ContentMgmt/download?playbackURI=${encodeURIComponent(rtspUrl)}`;
+      return `/api/nvr/ISAPI/ContentMgmt/download?playbackURI=${encodeURIComponent(rtspPlaybackUri)}`;
     }
 
     // We explicitly construct the ABSOLUTE URL here to completely bypass the Vite proxy.
