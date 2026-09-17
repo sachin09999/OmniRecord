@@ -166,9 +166,25 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
   // Group 1-minute raw recording segments into Continuous Hourly Stream Blocks
   const hourGroups = useMemo(() => {
     const map = new Map<number, RecordingItem[]>();
-    
+    const normalizedSelectedDate = selectedDate.replace(/-/g, '/');
+
+    // Filter out clips that belong to a different date (e.g. previous/next day neighbor clips)
+    const dateFilteredRecordings = recordings.filter((rec) => {
+      if (!rec.startTime) return false;
+      try {
+        const d = new Date(rec.startTime);
+        if (isNaN(d.getTime())) return false;
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${y}/${m}/${dd}` === normalizedSelectedDate;
+      } catch {
+        return false;
+      }
+    });
+
     // Sort raw recordings chronologically first
-    const sorted = [...recordings].sort((a, b) => {
+    const sorted = [...dateFilteredRecordings].sort((a, b) => {
       const timeA = a.startTime ? new Date(a.startTime).getTime() : 0;
       const timeB = b.startTime ? new Date(b.startTime).getTime() : 0;
       return timeA - timeB;
