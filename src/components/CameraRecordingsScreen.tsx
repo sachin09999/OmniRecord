@@ -286,10 +286,9 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
         ? rec.videoPath 
         : `rtsp://10.10.12.2:554/Streaming/tracks/${rtspChan}?starttime=${startStr}&endtime=${endStr}`;
       
-      // Bypass the Vite proxy entirely! The Vite http-proxy crashes on multi-gigabyte NVR file transfers.
-      // Send the browser directly to the NVR with embedded Basic Auth credentials.
-      // (If Chrome strips credentials, it will simply prompt the user to log in once, then download flawlessly).
-      return `http://admin:16%40SnV%3FcR1@10.10.12.2/ISAPI/ContentMgmt/download?playbackURI=${encodeURIComponent(exactPlaybackUri)}`;
+      // Proxy the request through our backend so that Basic Auth headers are injected automatically.
+      // (Directly hitting the NVR causes Chrome to strip embedded passwords and fail with 401 Unauthorized).
+      return `/api/nvr/ISAPI/ContentMgmt/download?playbackURI=${encodeURIComponent(exactPlaybackUri)}`;
     }
 
     // We explicitly construct the ABSOLUTE URL here to completely bypass the Vite proxy.
