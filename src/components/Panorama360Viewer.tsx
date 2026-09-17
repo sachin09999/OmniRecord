@@ -83,7 +83,7 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
     if (!selectedRecording || !selectedRecording.startTime) return null;
     try {
       const d = new Date(selectedRecording.startTime);
-      const hr = d.getUTCHours();
+      const hr = d.getHours();
       const formattedHr = String(hr).padStart(2, '0');
       const nextHr = String((hr + 1) % 24).padStart(2, '0');
       return `${formattedHr}:00 - ${nextHr}:00`;

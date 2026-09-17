@@ -537,15 +537,19 @@ export function getMockPlantData(plantId: string = DEFAULT_PLANT_ID, _apiBaseUrl
 
 export function calculateTimeRange(dateStr: string): { startTime: string; endTime: string } {
   if (!dateStr) {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date();
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
     return {
-      startTime: `${today}T00:00:00.000Z`,
-      endTime: `${today}T23:59:59.999Z`,
+      startTime: startOfDay.toISOString(),
+      endTime: endOfDay.toISOString(),
     };
   }
 
   const parts = dateStr.split(/[\/\-]/);
-  let year = 2026, month = 9, day = 12;
+  let year = new Date().getFullYear();
+  let month = new Date().getMonth() + 1;
+  let day = new Date().getDate();
 
   if (parts.length === 3) {
     if (parts[0].length === 4) {
@@ -561,16 +565,13 @@ export function calculateTimeRange(dateStr: string): { startTime: string; endTim
     }
   }
 
-  const d = new Date(Date.UTC(year, month - 1, day));
-  const yyyy = isNaN(d.getTime()) ? 2026 : d.getUTCFullYear();
-  const mm = isNaN(d.getTime()) ? '09' : String(d.getUTCMonth() + 1).padStart(2, '0');
-  const dd = isNaN(d.getTime()) ? '12' : String(d.getUTCDate()).padStart(2, '0');
-  const isoCurrentDay = `${yyyy}-${mm}-${dd}`;
+  const startOfDay = new Date(year, month - 1, day, 0, 0, 0, 0);
+  const endOfDay = new Date(year, month - 1, day, 23, 59, 59, 999);
 
-  const startTime = `${isoCurrentDay}T00:00:00.000Z`;
-  const endTime = `${isoCurrentDay}T23:59:59.999Z`;
-
-  return { startTime, endTime };
+  return {
+    startTime: startOfDay.toISOString(),
+    endTime: endOfDay.toISOString(),
+  };
 }
 
 export interface FetchRecordingsResult {

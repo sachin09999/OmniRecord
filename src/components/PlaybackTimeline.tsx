@@ -66,13 +66,13 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
   const trackRef = useRef<HTMLDivElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // Convert ISO string to seconds from start of day (0 to 86400)
+  // Convert ISO string to seconds from start of day (0 to 86400) in local time
   const getSecondsFromIso = useCallback((isoStr?: string): number => {
     if (!isoStr) return 0;
     try {
       const d = new Date(isoStr);
       if (isNaN(d.getTime())) return 0;
-      return d.getUTCHours() * 3600 + d.getUTCMinutes() * 60 + d.getUTCSeconds();
+      return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
     } catch {
       return 0;
     }
