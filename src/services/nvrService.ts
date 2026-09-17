@@ -60,11 +60,12 @@ export const fetchNvrRecordings = async (
     const xmlDoc = parser.parseFromString(xmlText, 'application/xml');
     
     const matchItems = xmlDoc.getElementsByTagName('searchMatchItem');
-    const rawChunks: { start: Date; end: Date }[] = [];
+    const rawChunks: { start: Date; end: Date; playbackURI?: string }[] = [];
 
     for (let i = 0; i < matchItems.length; i++) {
       const item = matchItems[i];
       const timeSpan = item.getElementsByTagName('timeSpan')[0];
+      const playbackURINode = item.getElementsByTagName('playbackURI')[0];
       if (timeSpan) {
         const itemStart = timeSpan.getElementsByTagName('startTime')[0]?.textContent;
         const itemEnd = timeSpan.getElementsByTagName('endTime')[0]?.textContent;
@@ -72,7 +73,8 @@ export const fetchNvrRecordings = async (
           // NVR returns local time but appends 'Z'. Strip 'Z' so JS Date parses it as local time.
           rawChunks.push({
             start: new Date(itemStart.replace('Z', '')),
-            end: new Date(itemEnd.replace('Z', ''))
+            end: new Date(itemEnd.replace('Z', '')),
+            playbackURI: playbackURINode?.textContent || undefined
           });
         }
       }
@@ -86,7 +88,7 @@ export const fetchNvrRecordings = async (
       cameraPath: `nvr_${paddedTrackID}`,
       startTime: chunk.start.toISOString(),
       endTime: chunk.end.toISOString(),
-      videoPath: '', 
+      videoPath: chunk.playbackURI || '', 
       duration: Math.round((chunk.end.getTime() - chunk.start.getTime()) / 1000),
       thumbnailUrl: `/api/nvr/ISAPI/Streaming/channels/${paddedTrackID}/picture`
     }));
