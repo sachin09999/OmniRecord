@@ -285,7 +285,12 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
       return `/api/nvr/ISAPI/ContentMgmt/download?playbackURI=${encodeURIComponent(rtspUrl)}`;
     }
 
-    return rec.videoUrl || (rec.videoPath ? resolveApiUrl(apiBaseUrl, rec.videoPath) : '');
+    const baseVidUrl = rec.videoUrl || (rec.videoPath ? resolveApiUrl(apiBaseUrl, rec.videoPath) : '');
+    if (!baseVidUrl) return '';
+    // Append token to bypass 401 errors on native browser downloads
+    return baseVidUrl.includes('?') 
+      ? `${baseVidUrl}&token=${encodeURIComponent(authToken)}` 
+      : `${baseVidUrl}?token=${encodeURIComponent(authToken)}`;
   };
 
   return (
