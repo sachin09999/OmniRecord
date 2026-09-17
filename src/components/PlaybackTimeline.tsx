@@ -142,10 +142,19 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
       const rawChan = camera.nvrChannelId || '1';
       const rtspChan = rawChan.length < 3 ? `${rawChan}01` : rawChan;
       
-      const datePart = activeRecording.startTime.replace(/[-:]/g, '').substring(0, 8);
-      const startIso = `${datePart}T${formatTimeStr(startSec).replace(/:/g, '')}Z`;
-      const endIso = `${datePart}T${formatTimeStr(endSec).replace(/:/g, '')}Z`;
-      
+      const parts = currentDate.replace(/-/g, '/').split('/');
+      const yr = parts.length === 3 ? parseInt(parts[0], 10) : new Date().getFullYear();
+      const mo = parts.length === 3 ? parseInt(parts[1], 10) - 1 : new Date().getMonth();
+      const da = parts.length === 3 ? parseInt(parts[2], 10) : new Date().getDate();
+
+      const dStart = new Date(yr, mo, da, 0, 0, 0, 0);
+      dStart.setSeconds(startSec);
+      const startIso = `${dStart.getFullYear()}${String(dStart.getMonth() + 1).padStart(2, '0')}${String(dStart.getDate()).padStart(2, '0')}T${String(dStart.getHours()).padStart(2, '0')}${String(dStart.getMinutes()).padStart(2, '0')}${String(dStart.getSeconds()).padStart(2, '0')}Z`;
+
+      const dEnd = new Date(yr, mo, da, 0, 0, 0, 0);
+      dEnd.setSeconds(endSec);
+      const endIso = `${dEnd.getFullYear()}${String(dEnd.getMonth() + 1).padStart(2, '0')}${String(dEnd.getDate()).padStart(2, '0')}T${String(dEnd.getHours()).padStart(2, '0')}${String(dEnd.getMinutes()).padStart(2, '0')}${String(dEnd.getSeconds()).padStart(2, '0')}Z`;
+
       const rtspUrl = `rtsp://admin:16%40SnV%3FcR1@10.10.12.2:554/Streaming/tracks/${rtspChan}?starttime=${startIso}&endtime=${endIso}`;
       
       // Use go2rtc MP4 download endpoint
@@ -179,12 +188,18 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
 
     if (camera?.type === 'nvr') {
       if (isFinalCommit && onSelectRecording && activeRecording) {
-         const formattedDate = currentDate.replace(/\//g, '-');
-         const newIso = `${formattedDate}T${formatTimeStr(clampedSecs)}Z`;
-         onSelectRecording({
-           ...activeRecording,
-           startTime: newIso
-         });
+        const parts = currentDate.replace(/-/g, '/').split('/');
+        if (parts.length === 3) {
+          const yr = parseInt(parts[0], 10);
+          const mo = parseInt(parts[1], 10) - 1;
+          const da = parseInt(parts[2], 10);
+          const seekDate = new Date(yr, mo, da, 0, 0, 0, 0);
+          seekDate.setSeconds(clampedSecs);
+          onSelectRecording({
+            ...activeRecording,
+            startTime: seekDate.toISOString()
+          });
+        }
       }
       return;
     }

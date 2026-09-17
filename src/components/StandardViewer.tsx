@@ -86,12 +86,18 @@ export const StandardViewer: React.FC<StandardViewerProps> = ({
         if (isLiveMode) {
           // Live NVR stream
           rtspUrl = `rtsp://admin:16%40SnV%3FcR1@10.10.12.2:554/Streaming/Channels/${rtspChan}`;
-        } else if (selectedRecording) {
-          // Historical NVR playback stream
-          const startStr = selectedRecording.startTime?.replace(/[-:]/g, '') || '';
-          // Play continuously until the end of the day to span across NVR file chunks seamlessly
-          const datePart = startStr.substring(0, 8);
-          const endStr = `${datePart}T235959Z`;
+        } else if (selectedRecording && selectedRecording.startTime) {
+          // Historical NVR playback stream - convert startTime to local NVR clock string
+          const d = new Date(selectedRecording.startTime);
+          const yyyy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const dd = String(d.getDate()).padStart(2, '0');
+          const hh = String(d.getHours()).padStart(2, '0');
+          const mi = String(d.getMinutes()).padStart(2, '0');
+          const ss = String(d.getSeconds()).padStart(2, '0');
+
+          const startStr = `${yyyy}${mm}${dd}T${hh}${mi}${ss}Z`;
+          const endStr = `${yyyy}${mm}${dd}T235959Z`;
           rtspUrl = `rtsp://admin:16%40SnV%3FcR1@10.10.12.2:554/Streaming/tracks/${rtspChan}?starttime=${startStr}&endtime=${endStr}`;
         } else {
           return;
