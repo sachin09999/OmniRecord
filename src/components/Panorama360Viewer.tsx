@@ -329,42 +329,9 @@ export const Panorama360Viewer: React.FC<Panorama360ViewerProps> = ({
     scene.add(sphereMesh);
     sphereMeshRef.current = sphereMesh;
 
-    // Clean 3D Spatial Hotspots (Subtle translucent blue markers)
+    // Hotspots group (empty - camera switch markers disabled)
     const hotspotsGroup = new THREE.Group();
     hotspotsGroup.name = 'hotspots';
-
-    if (camera.icons && camera.icons.length > 0) {
-      camera.icons.forEach((icon) => {
-        if (!icon.visible) return;
-
-        const iconGeo = new THREE.SphereGeometry(5 * icon.scale, 16, 16);
-        const iconMat = new THREE.MeshBasicMaterial({
-          color: 0x3b82f6,
-          transparent: true,
-          opacity: 0.85,
-          wireframe: false,
-        });
-        const iconMesh = new THREE.Mesh(iconGeo, iconMat);
-
-        iconMesh.position.set(icon.position.x, icon.position.y, icon.position.z);
-        iconMesh.userData = { iconData: icon };
-
-        // Subtle outer border ring
-        const ringGeo = new THREE.RingGeometry(6.5 * icon.scale, 8.5 * icon.scale, 32);
-        const ringMat = new THREE.MeshBasicMaterial({
-          color: 0xffffff,
-          side: THREE.DoubleSide,
-          transparent: true,
-          opacity: 0.6,
-        });
-        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-        ringMesh.lookAt(0, 0, 0);
-        iconMesh.add(ringMesh);
-
-        hotspotsGroup.add(iconMesh);
-      });
-    }
-
     scene.add(hotspotsGroup);
 
     let animationFrameId: number;
