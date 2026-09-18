@@ -31,6 +31,20 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      // Proxy for go2rtc MP4 streaming/downloading without timeout
+      '/api/stream.mp4': {
+        target: 'http://127.0.0.1:1984',
+        changeOrigin: true,
+        secure: false,
+        timeout: 0, // Disable proxy timeout for massive 1-hour streams
+        proxyTimeout: 0,
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes) => {
+            // Force browser save dialog instead of inline streaming
+            proxyRes.headers['content-disposition'] = 'attachment; filename="OmniRecord_Video.mp4"';
+          });
+        }
+      },
       // Proxy for Hikvision NVR ISAPI
       '/api/nvr': {
         target: 'http://10.10.12.2', // NVR IP address

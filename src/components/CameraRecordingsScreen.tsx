@@ -220,35 +220,53 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
     return groups;
   }, [recordings, sortOrder]);
 
+  // Helper function to build sanitized NVR RTSP Playback URL for go2rtc
+  const buildNvrRtspUrl = (rec?: RecordingItem): string => {
+    if (!rec) return '';
+    const rawChan = camera.nvrChannelId || '1';
+    const rtspChan = rawChan.length < 3 ? `${rawChan}01` : rawChan;
+    
+    const dStart = new Date(rec.startTime || selectedDate);
+    const dEnd = rec.endTime ? new Date(rec.endTime) : new Date(dStart.getTime() + (rec.duration || 3600) * 1000);
+    
+    const yyyy1 = dStart.getFullYear();
+    const mm1 = String(dStart.getMonth() + 1).padStart(2, '0');
+    const dd1 = String(dStart.getDate()).padStart(2, '0');
+    const hh1 = String(dStart.getHours()).padStart(2, '0');
+    const mi1 = String(dStart.getMinutes()).padStart(2, '0');
+    const ss1 = String(dStart.getSeconds()).padStart(2, '0');
+    const startStr = `${yyyy1}${mm1}${dd1}T${hh1}${mi1}${ss1}Z`;
+
+    const yyyy2 = dEnd.getFullYear();
+    const mm2 = String(dEnd.getMonth() + 1).padStart(2, '0');
+    const dd2 = String(dEnd.getDate()).padStart(2, '0');
+    const hh2 = String(dEnd.getHours()).padStart(2, '0');
+    const mi2 = String(dEnd.getMinutes()).padStart(2, '0');
+    const ss2 = String(dEnd.getSeconds()).padStart(2, '0');
+    const endStr = `${yyyy2}${mm2}${dd2}T${hh2}${mi2}${ss2}Z`;
+
+    let baseRtsp = rec.videoPath && rec.videoPath.includes('rtsp://') 
+      ? rec.videoPath 
+      : `rtsp://10.10.12.2:554/Streaming/tracks/${rtspChan}?starttime=${startStr}&endtime=${endStr}`;
+
+    // Inject credentials if missing (Hikvision ISAPI search returns playbackURI without auth)
+    if (!baseRtsp.includes('@')) {
+      baseRtsp = baseRtsp.replace('rtsp://', 'rtsp://admin:16%2540SnV%253FcR1@');
+    } else if (baseRtsp.includes('16%40SnV')) {
+      // Double-encode %40 to %2540 so go2rtc URL query parsing doesn't unescape @ and break domain parsing
+      baseRtsp = baseRtsp.replace('16%40SnV%3FcR1', '16%2540SnV%253FcR1');
+    }
+
+    return baseRtsp;
+  };
+
   // Helper function to resolve video media source URL
   const getVideoMediaUrl = (rec?: RecordingItem): string => {
     if (!rec) return '';
 
     if (camera.type === 'nvr' || (rec._id && rec._id.startsWith('nvr-'))) {
-      const rawChan = camera.nvrChannelId || '1';
-      const rtspChan = rawChan.length < 3 ? `${rawChan}01` : rawChan;
-      
-      const dStart = new Date(rec.startTime || selectedDate);
-      const dEnd = rec.endTime ? new Date(rec.endTime) : new Date(dStart.getTime() + (rec.duration || 3600) * 1000);
-      
-      const yyyy1 = dStart.getFullYear();
-      const mm1 = String(dStart.getMonth() + 1).padStart(2, '0');
-      const dd1 = String(dStart.getDate()).padStart(2, '0');
-      const hh1 = String(dStart.getHours()).padStart(2, '0');
-      const mi1 = String(dStart.getMinutes()).padStart(2, '0');
-      const ss1 = String(dStart.getSeconds()).padStart(2, '0');
-      const startStr = `${yyyy1}${mm1}${dd1}T${hh1}${mi1}${ss1}Z`;
-
-      const yyyy2 = dEnd.getFullYear();
-      const mm2 = String(dEnd.getMonth() + 1).padStart(2, '0');
-      const dd2 = String(dEnd.getDate()).padStart(2, '0');
-      const hh2 = String(dEnd.getHours()).padStart(2, '0');
-      const mi2 = String(dEnd.getMinutes()).padStart(2, '0');
-      const ss2 = String(dEnd.getSeconds()).padStart(2, '0');
-      const endStr = `${yyyy2}${mm2}${dd2}T${hh2}${mi2}${ss2}Z`;
-
-      const rtspUrl = `rtsp://admin:16%40SnV%3FcR1@10.10.12.2:554/Streaming/tracks/${rtspChan}?starttime=${startStr}&endtime=${endStr}`;
-      return `/api/stream.mp4?src=${encodeURIComponent(rtspUrl)}`;
+      const rtspPlaybackUri = buildNvrRtspUrl(rec);
+      return `/api/stream.mp4?src=${encodeURIComponent(rtspPlaybackUri)}`;
     }
 
     return rec.videoUrl || (rec.videoPath ? resolveApiUrl(apiBaseUrl, rec.videoPath) : '');
@@ -258,36 +276,7 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
     if (!rec) return '';
 
     if (camera.type === 'nvr' || (rec._id && rec._id.startsWith('nvr-'))) {
-      const rawChan = camera.nvrChannelId || '1';
-      const rtspChan = rawChan.length < 3 ? `${rawChan}01` : rawChan;
-      
-      const dStart = new Date(rec.startTime || selectedDate);
-      const dEnd = rec.endTime ? new Date(rec.endTime) : new Date(dStart.getTime() + (rec.duration || 3600) * 1000);
-      
-      const yyyy1 = dStart.getFullYear();
-      const mm1 = String(dStart.getMonth() + 1).padStart(2, '0');
-      const dd1 = String(dStart.getDate()).padStart(2, '0');
-      const hh1 = String(dStart.getHours()).padStart(2, '0');
-      const mi1 = String(dStart.getMinutes()).padStart(2, '0');
-      const ss1 = String(dStart.getSeconds()).padStart(2, '0');
-      const startStr = `${yyyy1}${mm1}${dd1}T${hh1}${mi1}${ss1}Z`;
-
-      const yyyy2 = dEnd.getFullYear();
-      const mm2 = String(dEnd.getMonth() + 1).padStart(2, '0');
-      const dd2 = String(dEnd.getDate()).padStart(2, '0');
-      const hh2 = String(dEnd.getHours()).padStart(2, '0');
-      const mi2 = String(dEnd.getMinutes()).padStart(2, '0');
-      const ss2 = String(dEnd.getSeconds()).padStart(2, '0');
-      const endStr = `${yyyy2}${mm2}${dd2}T${hh2}${mi2}${ss2}Z`;
-
-      // For NVR cameras, Hikvision's direct ISAPI download GET endpoint is notoriously flaky
-      // or requires POST/XML depending on the firmware version.
-      // Instead, we use go2rtc's real-time MP4 stream. Since we now use native browser downloading (no RAM buffering),
-      // the fragmented MP4 (fMP4) will stream directly to disk and be instantly playable!
-      const rtspPlaybackUri = rec.videoPath && rec.videoPath.includes('rtsp://') 
-        ? rec.videoPath 
-        : `rtsp://admin:16%40SnV%3FcR1@10.10.12.2:554/Streaming/tracks/${rtspChan}?starttime=${startStr}&endtime=${endStr}`;
-      
+      const rtspPlaybackUri = buildNvrRtspUrl(rec);
       return `/api/stream.mp4?src=${encodeURIComponent(rtspPlaybackUri)}`;
     }
 
