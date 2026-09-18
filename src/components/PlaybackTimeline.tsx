@@ -639,16 +639,18 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
           )}
         </div>
 
-        {/* Download Video in MP4 Format Button */}
-        <button
-          onClick={handleDownloadCutMp4}
-          disabled={isExportingCut}
-          className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-extrabold text-xs shadow-md shadow-emerald-600/30 transition flex items-center gap-1.5 shrink-0"
-          title="Download Clip / Cut Range as MP4 Video"
-        >
-          <Download className={`w-3.5 h-3.5 ${isExportingCut ? 'animate-bounce' : ''}`} />
-          <span className="font-mono">{isExportingCut ? 'Exporting...' : 'MP4'}</span>
-        </button>
+        {/* Download Video in MP4 Format Button (Only available for NVR cameras) */}
+        {(camera?.type === 'nvr' || (activeRecording?._id && activeRecording._id.startsWith('nvr-'))) && (
+          <button
+            onClick={handleDownloadCutMp4}
+            disabled={isExportingCut}
+            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-extrabold text-xs shadow-md shadow-emerald-600/30 transition flex items-center gap-1.5 shrink-0"
+            title="Download Clip / Cut Range as MP4 Video"
+          >
+            <Download className={`w-3.5 h-3.5 ${isExportingCut ? 'animate-bounce' : ''}`} />
+            <span className="font-mono">{isExportingCut ? 'Exporting...' : 'MP4'}</span>
+          </button>
+        )}
 
         {/* Monospace Timestamp Badge */}
         <div className="flex flex-col items-end hidden sm:flex">

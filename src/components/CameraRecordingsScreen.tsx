@@ -275,27 +275,14 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
   const getVideoDownloadUrl = (rec?: RecordingItem): string => {
     if (!rec) return '';
 
+    // Only allow downloads for NVR cameras via RTSP stream transcoding
     if (camera.type === 'nvr' || (rec._id && rec._id.startsWith('nvr-'))) {
       const rtspPlaybackUri = buildNvrRtspUrl(rec);
       return `/api/stream.mp4?src=${encodeURIComponent(rtspPlaybackUri)}`;
     }
 
-    // We explicitly construct the ABSOLUTE URL here to completely bypass the Vite proxy.
-    // The Vite dev server's http-proxy drops long-running large MP4 transfers midway,
-    // which causes the native browser downloader to mark the download as 'Failed: Site wasn't available'.
-    let absoluteVidUrl = rec.videoUrl || '';
-    if (!absoluteVidUrl && rec.videoPath) {
-      const cleanPath = rec.videoPath.startsWith('/') ? rec.videoPath : `/${rec.videoPath}`;
-      const cleanBase = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
-      absoluteVidUrl = `${cleanBase}${cleanPath}`;
-    }
-
-    if (!absoluteVidUrl) return '';
-
-    // Append token to bypass 401 errors on direct backend requests
-    return absoluteVidUrl.includes('?') 
-      ? `${absoluteVidUrl}&token=${encodeURIComponent(authToken)}` 
-      : `${absoluteVidUrl}?token=${encodeURIComponent(authToken)}`;
+    // Hide download button for standard IP cameras
+    return '';
   };
 
   return (
