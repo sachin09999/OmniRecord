@@ -275,13 +275,7 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
   const getVideoDownloadUrl = (rec?: RecordingItem): string => {
     if (!rec) return '';
 
-    // 1. NVR Cameras: download via go2rtc RTSP stream
-    if (camera.type === 'nvr' || (rec._id && rec._id.startsWith('nvr-'))) {
-      const rtspPlaybackUri = buildNvrRtspUrl(rec);
-      return `/api/stream.mp4?src=${encodeURIComponent(rtspPlaybackUri)}`;
-    }
-
-    // 2. 360 Cameras (Cupola backend): download video file directly from Cupola API
+    // 1. 360 Cameras (Cupola backend): download video file directly from Cupola API
     if (camera.type === '360' || (camera.relayUri && camera.relayUri.startsWith('RTMP_'))) {
       let absoluteVidUrl = rec.videoUrl || '';
       if (!absoluteVidUrl && rec.videoPath) {
@@ -298,7 +292,7 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
         : `${absoluteVidUrl}?token=${encodeURIComponent(authToken)}`;
     }
 
-    // 3. Standard IP Cameras ('rtsp'): download is not supported, hide button
+    // 2. IP Cam / NVR cameras: download feature disabled
     return '';
   };
 

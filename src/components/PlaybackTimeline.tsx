@@ -639,8 +639,8 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
           )}
         </div>
 
-        {/* Download Video in MP4 Format Button (Enabled for 360 and NVR cameras, hidden for standard IP cams) */}
-        {(camera?.type === '360' || camera?.type === 'nvr' || (activeRecording?._id && activeRecording._id.startsWith('nvr-')) || (camera?.relayUri && camera.relayUri.startsWith('RTMP_'))) && (
+        {/* Download Video in MP4 Format Button (Enabled for 360 cameras only, removed for IP Cam) */}
+        {(camera?.type === '360' || (camera?.relayUri && camera.relayUri.startsWith('RTMP_'))) && (
           <button
             onClick={handleDownloadCutMp4}
             disabled={isExportingCut}

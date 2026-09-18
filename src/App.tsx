@@ -292,7 +292,7 @@ export function App() {
                     <Video className="w-16 h-16 text-emerald-300 group-hover:text-emerald-200 transition duration-300 z-10" />
                   </div>
                   <div className="p-6">
-                    <h2 className="text-2xl font-bold mb-2">Fixed IP Cameras (NVR)</h2>
+                    <h2 className="text-2xl font-bold mb-2">IP Cam</h2>
                     <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-500'}`}>
                       Access standard 2D security cameras connected directly to the Hikvision NVR for crystal-clear monitoring.
                     </p>
