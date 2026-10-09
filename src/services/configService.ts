@@ -66,13 +66,11 @@ export const resetAppConfig = (): AppConfig => {
 };
 
 /**
- * Builds double-encoded password credentials string for go2rtc RTSP queries.
- * Example: `admin:16%2540SnV%253FcR1@`
+ * Builds encoded password credentials string for go2rtc RTSP queries.
+ * Example: `admin:16%40SnV%3FcR1`
  */
 export const buildNvrRtspCredentials = (config: AppConfig = getAppConfig()): string => {
   const user = encodeURIComponent(config.nvrUsername);
-  let pass = encodeURIComponent(config.nvrPassword);
-  // Double-encode percent sign so go2rtc URL query parsing doesn't unescape @ prematurely
-  pass = pass.replace(/%/g, '%25');
+  const pass = encodeURIComponent(config.nvrPassword);
   return `${user}:${pass}`;
 };

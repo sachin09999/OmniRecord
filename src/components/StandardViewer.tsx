@@ -3,7 +3,7 @@ import type { Camera, RecordingItem } from '../types/camera';
 import { PlaybackTimeline } from './PlaybackTimeline';
 import { ModernLoadingSpinner } from './ModernLoadingSpinner';
 import { fetchNvrRecordings } from '../services/nvrService';
-import { getAppConfig } from '../services/configService';
+import { getAppConfig, buildNvrRtspCredentials } from '../services/configService';
 import {
   ChevronLeft,
   FileText,
@@ -84,8 +84,7 @@ export const StandardViewer: React.FC<StandardViewerProps> = ({
         const rtspChan = rawChan.length < 3 ? `${rawChan}01` : rawChan;
         
         const cfg = getAppConfig();
-        const rtspPass = encodeURIComponent(cfg.nvrPassword).replace(/%/g, '%25');
-        const creds = `${encodeURIComponent(cfg.nvrUsername)}:${rtspPass}`;
+        const creds = buildNvrRtspCredentials(cfg);
         const nvrHost = cfg.nvrIp || '10.10.11.2';
         const rtspPort = cfg.nvrRtspPort || '554';
 
