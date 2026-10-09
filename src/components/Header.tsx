@@ -8,7 +8,8 @@ import {
   ChevronDown,
   ChevronsUpDown,
   Sun,
-  Moon
+  Moon,
+  ShieldCheck
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -21,6 +22,7 @@ interface HeaderProps {
   viewMode: 'grid' | 'list' | 'map';
   onViewModeChange: (mode: 'grid' | 'list' | 'map') => void;
   onOpenSettings: () => void;
+  onOpenAdminConfig?: () => void;
   totalCameras: number;
   liveStatus?: boolean;
   theme?: 'light' | 'dark';
@@ -36,6 +38,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSearchChange,
   viewMode,
   onViewModeChange,
+  onOpenAdminConfig,
   theme = 'dark',
   onToggleTheme,
 }) => {
@@ -197,8 +200,24 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Right View Mode Tabs & Theme Switcher */}
+        {/* Right View Mode Tabs, Admin Config & Theme Switcher */}
         <div className="flex items-center gap-2">
+          {/* Admin System Config Button */}
+          {onOpenAdminConfig && (
+            <button
+              onClick={onOpenAdminConfig}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition border shadow-sm ${
+                isDark
+                  ? 'bg-indigo-950/80 text-indigo-300 border-indigo-700/60 hover:bg-indigo-900'
+                  : 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100'
+              }`}
+              title="Open System Admin & IP Configuration"
+            >
+              <ShieldCheck className="w-4 h-4 text-indigo-400" />
+              <span>Admin Config</span>
+            </button>
+          )}
+
           {/* Theme Switcher Button */}
           {onToggleTheme && (
             <button

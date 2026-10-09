@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { PlantData, Camera, StickyNote, RecordingItem } from './types/camera';
 import { fetchPlantData } from './services/apiService';
+import { getAppConfig, saveAppConfig, type AppConfig } from './services/configService';
 import { Header } from './components/Header';
 import { RecordingGrid } from './components/RecordingGrid';
 import { Panorama360Viewer } from './components/Panorama360Viewer';
@@ -8,6 +9,7 @@ import { StandardViewer } from './components/StandardViewer';
 import { CameraRecordingsScreen } from './components/CameraRecordingsScreen';
 import { FloatingStickyNote } from './components/FloatingStickyNote';
 import { ApiSettingsModal } from './components/ApiSettingsModal';
+import { AdminConfigModal } from './components/AdminConfigModal';
 import { ModernLoadingSpinner } from './components/ModernLoadingSpinner';
 import {
   Compass,
@@ -15,12 +17,16 @@ import {
 } from 'lucide-react';
 
 export function App() {
+  const initialConfig = getAppConfig();
+  const [appConfig, setAppConfig] = useState<AppConfig>(initialConfig);
   const [plantData, setPlantData] = useState<PlantData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [apiBaseUrl, setApiBaseUrl] = useState<string>('http://10.10.12.50:3000');
-  const [plantId, setPlantId] = useState<string>('6a38fb720ab1620742c32c96');
-  const [authToken, setAuthToken] = useState<string>('');
+  const [apiBaseUrl, setApiBaseUrl] = useState<string>(initialConfig.cupolaApiBaseUrl);
+  const [plantId, setPlantId] = useState<string>(initialConfig.plantId);
+  const [authToken, setAuthToken] = useState<string>(initialConfig.authToken);
   const [isLiveConnected, setIsLiveConnected] = useState<boolean>(false);
+
+  const [isAdminConfigOpen, setIsAdminConfigOpen] = useState<boolean>(false);
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('omni_theme') as 'light' | 'dark') || 'dark';
@@ -214,6 +220,7 @@ export function App() {
           viewMode={viewMode}
           onViewModeChange={setViewMode}
           onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenAdminConfig={() => setIsAdminConfigOpen(true)}
           liveStatus={isLiveConnected}
           totalCameras={plantData?.cameras.length || 0}
           theme={theme}
@@ -360,6 +367,19 @@ export function App() {
           setAuthToken(token);
         }}
         isLiveConnected={isLiveConnected}
+      />
+
+      {/* Admin System Configuration Modal */}
+      <AdminConfigModal
+        isOpen={isAdminConfigOpen}
+        onClose={() => setIsAdminConfigOpen(false)}
+        theme={theme}
+        onConfigSaved={(newConfig) => {
+          setAppConfig(newConfig);
+          setApiBaseUrl(newConfig.cupolaApiBaseUrl);
+          setPlantId(newConfig.plantId);
+          setAuthToken(newConfig.authToken);
+        }}
       />
     </>
   );

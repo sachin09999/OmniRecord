@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { Camera, RecordingItem } from '../types/camera';
 import { fetchCameraRecordings, extractCameraPath, resolveApiUrl, resolveRecordingThumbnailUrl, downloadVideoFile } from '../services/apiService';
 import { fetchNvrRecordings } from '../services/nvrService';
+import { getAppConfig, buildNvrRtspCredentials } from '../services/configService';
 import { ModernCalendarPicker } from './ModernCalendarPicker';
 import { ModernLoadingSpinner } from './ModernLoadingSpinner';
 
@@ -223,6 +224,7 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
   // Helper function to build sanitized NVR RTSP Playback URL for go2rtc
   const buildNvrRtspUrl = (rec?: RecordingItem): string => {
     if (!rec) return '';
+    const currentCfg = getAppConfig();
     const rawChan = camera.nvrChannelId || '1';
     const rtspChan = rawChan.length < 3 ? `${rawChan}01` : rawChan;
     
@@ -245,16 +247,15 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
     const ss2 = String(dEnd.getSeconds()).padStart(2, '0');
     const endStr = `${yyyy2}${mm2}${dd2}T${hh2}${mi2}${ss2}Z`;
 
+    const creds = buildNvrRtspCredentials(currentCfg);
+
     let baseRtsp = rec.videoPath && rec.videoPath.includes('rtsp://') 
       ? rec.videoPath 
-      : `rtsp://10.10.12.2:554/Streaming/tracks/${rtspChan}?starttime=${startStr}&endtime=${endStr}`;
+      : `rtsp://${currentCfg.nvrIp}:${currentCfg.nvrRtspPort}/Streaming/tracks/${rtspChan}?starttime=${startStr}&endtime=${endStr}`;
 
     // Inject credentials if missing (Hikvision ISAPI search returns playbackURI without auth)
     if (!baseRtsp.includes('@')) {
-      baseRtsp = baseRtsp.replace('rtsp://', 'rtsp://admin:16%2540SnV%253FcR1@');
-    } else if (baseRtsp.includes('16%40SnV')) {
-      // Double-encode %40 to %2540 so go2rtc URL query parsing doesn't unescape @ and break domain parsing
-      baseRtsp = baseRtsp.replace('16%40SnV%3FcR1', '16%2540SnV%253FcR1');
+      baseRtsp = baseRtsp.replace('rtsp://', `rtsp://${creds}@`);
     }
 
     return baseRtsp;
