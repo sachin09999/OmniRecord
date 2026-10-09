@@ -94,6 +94,16 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
         } else {
           const res = await fetchCameraRecordings(apiBaseUrl, camera, dateStr, undefined, undefined, authToken);
           recs = res.recordings;
+
+          // Fallback: If Cupola API returned 0 recordings for an RTSP camera, attempt Hikvision NVR search
+          if (recs.length === 0 && (camera.type === 'rtsp' || camera.type === 'nvr')) {
+            const startOfDay = new Date(dateStr);
+            startOfDay.setHours(0, 0, 0, 0);
+            const endOfDay = new Date(dateStr);
+            endOfDay.setHours(23, 59, 59, 999);
+            const chanId = camera.nvrChannelId || (camera.name ? camera.name.replace(/\D/g, '') : '') || '1';
+            recs = await fetchNvrRecordings(chanId, startOfDay, endOfDay);
+          }
         }
 
         setRecordings(recs);

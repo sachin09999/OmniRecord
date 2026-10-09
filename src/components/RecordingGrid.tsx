@@ -4,6 +4,7 @@ import {
   MapPin,
   ArrowRight,
   VideoOff,
+  Video,
   RotateCw,
   FileText
 } from 'lucide-react';
@@ -139,17 +140,28 @@ export const RecordingGrid: React.FC<RecordingGridProps> = ({
               </div>
 
               {/* Card Image Frame (Camera Stream Snapshot Thumbnail) */}
-              <div className={`relative aspect-video rounded-xl overflow-hidden mb-4 border shadow-inner ${
+              <div className={`relative aspect-video rounded-xl overflow-hidden mb-3 border shadow-inner flex items-center justify-center ${
                 isDark ? 'bg-slate-950 border-slate-800' : 'bg-gray-100 border-gray-200'
               }`}>
-                <img
-                  src={cam.thumbnailUrl || cam.panoramaUrl}
-                  alt={cam.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
+                {/* Fallback Camera Badge (renders behind img or when img errors) */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 text-slate-500 gap-1.5 z-0 pointer-events-none">
+                  <Video className="w-8 h-8 text-indigo-400 opacity-60" />
+                  <span className="text-[10px] font-mono text-indigo-300 font-semibold tracking-wider uppercase">Live Camera Feed</span>
+                </div>
+
+                {cam.thumbnailUrl || cam.panoramaUrl ? (
+                  <img
+                    src={cam.thumbnailUrl || cam.panoramaUrl}
+                    alt={cam.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 relative z-10"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : null}
 
                 {/* Subtle dark gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-950/60 via-transparent to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-950/80 via-transparent to-transparent pointer-events-none z-20"></div>
               </div>
 
               {/* Card Footer Bar */}
@@ -157,16 +169,16 @@ export const RecordingGrid: React.FC<RecordingGridProps> = ({
                 isDark ? 'border-slate-800' : 'border-gray-100'
               }`}>
                 {/* Left: Location Pin + Location Name */}
-                <div className="flex items-center gap-1.5 text-xs min-w-0">
+                <div className="flex items-center gap-1 text-xs min-w-0 max-w-[110px]">
                   <MapPin className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                   <span className={`truncate font-medium text-[11px] ${isDark ? 'text-slate-300' : 'text-gray-600'}`} title={locationText}>{locationText}</span>
                 </div>
 
-                {/* Right: Relay tag + View 360 Button */}
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded-md border ${
+                {/* Right: Relay tag + View Camera Button */}
+                <div className="flex items-center gap-1.5 shrink-0 min-w-0">
+                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded-md border truncate max-w-[110px] ${
                     isDark ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-gray-50 text-gray-600 border-gray-200'
-                  }`}>
+                  }`} title={cam.relayUri}>
                     {cam.relayUri}
                   </span>
 
@@ -175,7 +187,7 @@ export const RecordingGrid: React.FC<RecordingGridProps> = ({
                       e.stopPropagation();
                       onSelectCamera(cam);
                     }}
-                    className={`flex items-center gap-1 px-3 py-1.5 border font-bold text-xs rounded-xl transition ${
+                    className={`flex items-center gap-1 px-2.5 py-1.5 border font-bold text-xs rounded-xl transition shrink-0 ${
                       isDark
                         ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 text-white'
                         : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-900'
