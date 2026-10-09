@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { PlantData, Camera, StickyNote, RecordingItem } from './types/camera';
 import { fetchPlantData } from './services/apiService';
-import { getAppConfig, saveAppConfig, type AppConfig } from './services/configService';
+import { getAppConfig } from './services/configService';
 import { Header } from './components/Header';
 import { RecordingGrid } from './components/RecordingGrid';
 import { Panorama360Viewer } from './components/Panorama360Viewer';
@@ -19,7 +19,6 @@ import {
 
 export function App() {
   const initialConfig = getAppConfig();
-  const [appConfig, setAppConfig] = useState<AppConfig>(initialConfig);
   const [plantData, setPlantData] = useState<PlantData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [apiBaseUrl, setApiBaseUrl] = useState<string>(initialConfig.cupolaApiBaseUrl);
@@ -243,7 +242,6 @@ export function App() {
             setPageScreen('dashboard');
           }}
           onConfigSaved={(newConfig) => {
-            setAppConfig(newConfig);
             setApiBaseUrl(newConfig.cupolaApiBaseUrl);
             setPlantId(newConfig.plantId);
             setAuthToken(newConfig.authToken);
@@ -428,7 +426,6 @@ export function App() {
         onClose={() => setIsAdminConfigOpen(false)}
         theme={theme}
         onConfigSaved={(newConfig) => {
-          setAppConfig(newConfig);
           setApiBaseUrl(newConfig.cupolaApiBaseUrl);
           setPlantId(newConfig.plantId);
           setAuthToken(newConfig.authToken);

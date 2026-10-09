@@ -11,8 +11,7 @@ import {
   Key,
   LogIn,
   RotateCcw,
-  Save,
-  Cpu
+  Save
 } from 'lucide-react';
 import { getAppConfig, saveAppConfig, resetAppConfig, type AppConfig } from '../services/configService';
 import { resolveApiUrl, loginToCupola } from '../services/apiService';

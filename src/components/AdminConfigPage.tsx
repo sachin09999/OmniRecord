@@ -13,8 +13,7 @@ import {
   RotateCcw,
   Save,
   Globe,
-  Lock,
-  Cpu
+  Lock
 } from 'lucide-react';
 import { getAppConfig, saveAppConfig, resetAppConfig, type AppConfig } from '../services/configService';
 import { resolveApiUrl, loginToCupola } from '../services/apiService';
