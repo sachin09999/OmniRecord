@@ -407,7 +407,7 @@ export const AdminConfigPage: React.FC<AdminConfigPageProps> = ({
                   type="text"
                   value={config.nvrIp}
                   onChange={(e) => handleChange('nvrIp', e.target.value)}
-                  placeholder="e.g. 10.10.12.2"
+                  placeholder="e.g. 10.10.11.2"
                   className={`w-full p-3 rounded-xl font-mono text-xs border focus:outline-none focus:ring-2 ${
                     isDark ? 'bg-slate-950 border-slate-700 text-white focus:ring-emerald-500' : 'bg-gray-50 border-gray-300 text-gray-900 focus:ring-emerald-500'
                   }`}

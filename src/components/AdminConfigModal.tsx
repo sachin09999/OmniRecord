@@ -366,7 +366,7 @@ export const AdminConfigModal: React.FC<AdminConfigModalProps> = ({
                     type="text"
                     value={config.nvrIp}
                     onChange={(e) => handleChange('nvrIp', e.target.value)}
-                    placeholder="10.10.12.2"
+                    placeholder="10.10.11.2"
                     className={`w-full p-2.5 rounded-lg font-mono border focus:outline-none focus:ring-1 ${
                       isDark ? 'bg-slate-900 border-slate-700 text-white focus:border-emerald-500' : 'bg-white border-gray-300 text-gray-900 focus:border-emerald-600'
                     }`}

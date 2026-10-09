@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import type { RecordingItem, Neighbors, Camera } from '../types/camera';
 import { resolveRecordingThumbnailUrl, downloadVideoFile } from '../services/apiService';
+import { getAppConfig } from '../services/configService';
 import {
   Play,
   Pause,
@@ -155,7 +156,13 @@ export const PlaybackTimeline: React.FC<PlaybackTimelineProps> = ({
       dEnd.setSeconds(endSec);
       const endIso = `${dEnd.getFullYear()}${String(dEnd.getMonth() + 1).padStart(2, '0')}${String(dEnd.getDate()).padStart(2, '0')}T${String(dEnd.getHours()).padStart(2, '0')}${String(dEnd.getMinutes()).padStart(2, '0')}${String(dEnd.getSeconds()).padStart(2, '0')}Z`;
 
-      const rtspUrl = `rtsp://admin:16%40SnV%3FcR1@10.10.12.2:554/Streaming/tracks/${rtspChan}?starttime=${startIso}&endtime=${endIso}`;
+      const cfg = getAppConfig();
+      const rtspPass = encodeURIComponent(cfg.nvrPassword).replace(/%/g, '%25');
+      const creds = `${encodeURIComponent(cfg.nvrUsername)}:${rtspPass}`;
+      const nvrHost = cfg.nvrIp || '10.10.11.2';
+      const rtspPort = cfg.nvrRtspPort || '554';
+
+      const rtspUrl = `rtsp://${creds}@${nvrHost}:${rtspPort}/Streaming/tracks/${rtspChan}?starttime=${startIso}&endtime=${endIso}`;
       
       // Use go2rtc MP4 download endpoint
       mediaUrl = `/api/stream.mp4?src=${encodeURIComponent(rtspUrl)}`;

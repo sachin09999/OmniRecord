@@ -3,6 +3,7 @@ import type { Camera, RecordingItem } from '../types/camera';
 import { PlaybackTimeline } from './PlaybackTimeline';
 import { ModernLoadingSpinner } from './ModernLoadingSpinner';
 import { fetchNvrRecordings } from '../services/nvrService';
+import { getAppConfig } from '../services/configService';
 import {
   ChevronLeft,
   FileText,
@@ -82,10 +83,16 @@ export const StandardViewer: React.FC<StandardViewerProps> = ({
         const rawChan = camera.nvrChannelId || '1';
         const rtspChan = rawChan.length < 3 ? `${rawChan}01` : rawChan;
         
+        const cfg = getAppConfig();
+        const rtspPass = encodeURIComponent(cfg.nvrPassword).replace(/%/g, '%25');
+        const creds = `${encodeURIComponent(cfg.nvrUsername)}:${rtspPass}`;
+        const nvrHost = cfg.nvrIp || '10.10.11.2';
+        const rtspPort = cfg.nvrRtspPort || '554';
+
         let rtspUrl = '';
         if (isLiveMode) {
           // Live NVR stream
-          rtspUrl = `rtsp://admin:16%40SnV%3FcR1@10.10.12.2:554/Streaming/Channels/${rtspChan}`;
+          rtspUrl = `rtsp://${creds}@${nvrHost}:${rtspPort}/Streaming/Channels/${rtspChan}`;
         } else if (selectedRecording && selectedRecording.startTime) {
           // Historical NVR playback stream - convert startTime to local NVR clock string
           const d = new Date(selectedRecording.startTime);
@@ -98,7 +105,7 @@ export const StandardViewer: React.FC<StandardViewerProps> = ({
 
           const startStr = `${yyyy}${mm}${dd}T${hh}${mi}${ss}Z`;
           const endStr = `${yyyy}${mm}${dd}T235959Z`;
-          rtspUrl = `rtsp://admin:16%40SnV%3FcR1@10.10.12.2:554/Streaming/tracks/${rtspChan}?starttime=${startStr}&endtime=${endStr}`;
+          rtspUrl = `rtsp://${creds}@${nvrHost}:${rtspPort}/Streaming/tracks/${rtspChan}?starttime=${startStr}&endtime=${endStr}`;
         } else {
           return;
         }

@@ -1,5 +1,6 @@
 import type { ApiResponse, PlantData, Camera, RecordingItem, Neighbors, RecordingsApiResponse } from '../types/camera';
 import { createProceduralPanorama, createProceduralFloorplan } from '../utils/panoramaGenerator';
+import { getAppConfig } from './configService';
 
 const DEFAULT_PLANT_ID = '6a38fb720ab1620742c32c96';
 const DEFAULT_API_BASE = 'http://10.10.12.50:3000';
@@ -401,8 +402,8 @@ async function fetchActualNvrCameras(apiBaseUrl: string): Promise<Camera[]> {
             panoramaUrl: snapUrl,
             // satisfy Camera interface
             chipid: null,
-            ip: '10.10.12.2',
-            port: '80',
+            ip: getAppConfig().nvrIp || '10.10.11.2',
+            port: getAppConfig().nvrHttpPort || '80',
             vfov: 0
           } as unknown as Camera);
         }

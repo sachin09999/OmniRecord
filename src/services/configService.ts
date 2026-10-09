@@ -19,7 +19,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   cupolaApiBaseUrl: 'http://10.10.12.50:3000',
   plantId: '6a38fb720ab1620742c32c96',
   authToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NGM4YjNhNTRlZDg0ZTM3NzM1ZDU0ZDYiLCJ1c2VybmFtZSI6ImFkbWluIiwiZW1haWwiOiJhZG1pbkBhc3BlZWQtZm9vLmNvbSIsInJvbGVzIjp7ImFkbWluIjp7Il9pZCI6IjY0YzhiM2E1MDE2ZGUyM2ZmMTI3YjM4YyIsImdyb3VwcyI6WyJyb290Il19LCJhY2NvdW50IjoiNjRjOGIzYTUwMTZkZTIzZmIxMjdiMzkyIn0sImdyb3VwcyI6W10sImlhdCI6MTc4OTQ1MTk5MCwiZXhwIjoxNzkwNzQ3OTkwfQ.rOpYqVkeBnbHSui47pLT6j87dQRPXD9wVSRKYOA1cvE',
-  nvrIp: '10.10.12.2',
+  nvrIp: '10.10.11.2',
   nvrHttpPort: '80',
   nvrRtspPort: '554',
   nvrUsername: 'admin',
