@@ -352,6 +352,21 @@ export async function fetchPlantData(
   return getMockPlantData(plantId, apiBaseUrl);
 }
 
+export const HIKVISION_DEFAULT_CAMERAS: Camera[] = [
+  { _id: 'nvr-camera-1', name: 'Server_Room', locationName: '[D1] Server Room', relayUri: 'NVR_1', path: 'NVR_1', type: 'nvr', nvrChannelId: '1', isOnline: true, recording: true, ip: '10.10.11.2', port: '80', vfov: 0, chipid: null, x: 0.15, y: 0.20, rotateSpeed: 0, rotateDirection: 0, basePosition: 0, uri: 'Server Room', thumbnailUrl: '/api/nvr/ISAPI/Streaming/channels/101/picture', panoramaUrl: '/api/nvr/ISAPI/Streaming/channels/101/picture', icons: [] } as unknown as Camera,
+  { _id: 'nvr-camera-2', name: 'Office_Passage', locationName: '[D2] Office Passage', relayUri: 'NVR_2', path: 'NVR_2', type: 'nvr', nvrChannelId: '2', isOnline: true, recording: true, ip: '10.10.11.2', port: '80', vfov: 0, chipid: null, x: 0.25, y: 0.20, rotateSpeed: 0, rotateDirection: 0, basePosition: 0, uri: 'Office Passage', thumbnailUrl: '/api/nvr/ISAPI/Streaming/channels/201/picture', panoramaUrl: '/api/nvr/ISAPI/Streaming/channels/201/picture', icons: [] } as unknown as Camera,
+  { _id: 'nvr-camera-3', name: 'corridor', locationName: '[D3] corridor', relayUri: 'NVR_3', path: 'NVR_3', type: 'nvr', nvrChannelId: '3', isOnline: true, recording: true, ip: '10.10.11.2', port: '80', vfov: 0, chipid: null, x: 0.35, y: 0.20, rotateSpeed: 0, rotateDirection: 0, basePosition: 0, uri: 'corridor', thumbnailUrl: '/api/nvr/ISAPI/Streaming/channels/301/picture', panoramaUrl: '/api/nvr/ISAPI/Streaming/channels/301/picture', icons: [] } as unknown as Camera,
+  { _id: 'nvr-camera-4', name: 'Floor_3_Hallway', locationName: '[D4] Floor 3 Hallway', relayUri: 'NVR_4', path: 'NVR_4', type: 'nvr', nvrChannelId: '4', isOnline: true, recording: true, ip: '10.10.11.2', port: '80', vfov: 0, chipid: null, x: 0.45, y: 0.20, rotateSpeed: 0, rotateDirection: 0, basePosition: 0, uri: 'Floor 3 Hallway', thumbnailUrl: '/api/nvr/ISAPI/Streaming/channels/401/picture', panoramaUrl: '/api/nvr/ISAPI/Streaming/channels/401/picture', icons: [] } as unknown as Camera,
+  { _id: 'nvr-camera-5', name: 'Office_Lobby', locationName: '[D5] Office Lobby', relayUri: 'NVR_5', path: 'NVR_5', type: 'nvr', nvrChannelId: '5', isOnline: true, recording: true, ip: '10.10.11.2', port: '80', vfov: 0, chipid: null, x: 0.55, y: 0.20, rotateSpeed: 0, rotateDirection: 0, basePosition: 0, uri: 'Office Lobby', thumbnailUrl: '/api/nvr/ISAPI/Streaming/channels/501/picture', panoramaUrl: '/api/nvr/ISAPI/Streaming/channels/501/picture', icons: [] } as unknown as Camera,
+  { _id: 'nvr-camera-6', name: 'Reception', locationName: '[D6] Reception', relayUri: 'NVR_6', path: 'NVR_6', type: 'nvr', nvrChannelId: '6', isOnline: true, recording: true, ip: '10.10.11.2', port: '80', vfov: 0, chipid: null, x: 0.65, y: 0.20, rotateSpeed: 0, rotateDirection: 0, basePosition: 0, uri: 'Reception', thumbnailUrl: '/api/nvr/ISAPI/Streaming/channels/601/picture', panoramaUrl: '/api/nvr/ISAPI/Streaming/channels/601/picture', icons: [] } as unknown as Camera,
+  { _id: 'nvr-camera-7', name: 'Waiting_Area', locationName: '[D7] Waiting Area', relayUri: 'NVR_7', path: 'NVR_7', type: 'nvr', nvrChannelId: '7', isOnline: true, recording: true, ip: '10.10.11.2', port: '80', vfov: 0, chipid: null, x: 0.15, y: 0.50, rotateSpeed: 0, rotateDirection: 0, basePosition: 0, uri: 'Waiting Area', thumbnailUrl: '/api/nvr/ISAPI/Streaming/channels/701/picture', panoramaUrl: '/api/nvr/ISAPI/Streaming/channels/701/picture', icons: [] } as unknown as Camera,
+  { _id: 'nvr-camera-8', name: 'Common_Area', locationName: '[D8] Common Area', relayUri: 'NVR_8', path: 'NVR_8', type: 'nvr', nvrChannelId: '8', isOnline: true, recording: true, ip: '10.10.11.2', port: '80', vfov: 0, chipid: null, x: 0.25, y: 0.50, rotateSpeed: 0, rotateDirection: 0, basePosition: 0, uri: 'Common Area', thumbnailUrl: '/api/nvr/ISAPI/Streaming/channels/801/picture', panoramaUrl: '/api/nvr/ISAPI/Streaming/channels/801/picture', icons: [] } as unknown as Camera,
+  { _id: 'nvr-camera-9', name: 'Inner_Corridor', locationName: '[D9] Inner Corridor', relayUri: 'NVR_9', path: 'NVR_9', type: 'nvr', nvrChannelId: '9', isOnline: true, recording: true, ip: '10.10.11.2', port: '80', vfov: 0, chipid: null, x: 0.35, y: 0.50, rotateSpeed: 0, rotateDirection: 0, basePosition: 0, uri: 'Inner Corridor', thumbnailUrl: '/api/nvr/ISAPI/Streaming/channels/901/picture', panoramaUrl: '/api/nvr/ISAPI/Streaming/channels/901/picture', icons: [] } as unknown as Camera,
+  { _id: 'nvr-camera-10', name: 'Command_Center_1', locationName: '[D10] Command Center 1', relayUri: 'NVR_10', path: 'NVR_10', type: 'nvr', nvrChannelId: '10', isOnline: true, recording: true, ip: '10.10.11.2', port: '80', vfov: 0, chipid: null, x: 0.45, y: 0.50, rotateSpeed: 0, rotateDirection: 0, basePosition: 0, uri: 'Command Center 1', thumbnailUrl: '/api/nvr/ISAPI/Streaming/channels/1001/picture', panoramaUrl: '/api/nvr/ISAPI/Streaming/channels/1001/picture', icons: [] } as unknown as Camera,
+  { _id: 'nvr-camera-11', name: 'Command_Center_2', locationName: '[D11] Command Center 2', relayUri: 'NVR_11', path: 'NVR_11', type: 'nvr', nvrChannelId: '11', isOnline: true, recording: true, ip: '10.10.11.2', port: '80', vfov: 0, chipid: null, x: 0.55, y: 0.50, rotateSpeed: 0, rotateDirection: 0, basePosition: 0, uri: 'Command Center 2', thumbnailUrl: '/api/nvr/ISAPI/Streaming/channels/1101/picture', panoramaUrl: '/api/nvr/ISAPI/Streaming/channels/1101/picture', icons: [] } as unknown as Camera,
+  { _id: 'nvr-camera-12', name: 'Command_Center_3', locationName: '[D12] Command Center 3', relayUri: 'NVR_12', path: 'NVR_12', type: 'nvr', nvrChannelId: '12', isOnline: true, recording: true, ip: '10.10.11.2', port: '80', vfov: 0, chipid: null, x: 0.65, y: 0.50, rotateSpeed: 0, rotateDirection: 0, basePosition: 0, uri: 'Command Center 3', thumbnailUrl: '/api/nvr/ISAPI/Streaming/channels/1201/picture', panoramaUrl: '/api/nvr/ISAPI/Streaming/channels/1201/picture', icons: [] } as unknown as Camera,
+];
+
 async function fetchActualNvrCameras(apiBaseUrl: string): Promise<Camera[]> {
   const nvrCameras: Camera[] = [];
   try {
@@ -400,7 +415,6 @@ async function fetchActualNvrCameras(apiBaseUrl: string): Promise<Camera[]> {
             uri: name,
             thumbnailUrl: snapUrl,
             panoramaUrl: snapUrl,
-            // satisfy Camera interface
             chipid: null,
             ip: getAppConfig().nvrIp || '10.10.11.2',
             port: getAppConfig().nvrHttpPort || '80',
@@ -412,16 +426,19 @@ async function fetchActualNvrCameras(apiBaseUrl: string): Promise<Camera[]> {
   } catch (err) {
     console.warn('[OmniRecord] Failed to fetch actual NVR cameras', err);
   }
+  
+  if (nvrCameras.length === 0) {
+    return HIKVISION_DEFAULT_CAMERAS;
+  }
   return nvrCameras;
 }
 
 async function augmentPlantData(
   rawPlant: PlantData,
   apiBaseUrl: string,
-  validCameraPaths?: Set<string>,
+  _validCameraPaths?: Set<string>,
   cameraThumbMap?: Map<string, string>
 ): Promise<PlantData> {
-  // Log the first camera to help debug what properties are available
   if (rawPlant.cameras && rawPlant.cameras.length > 0) {
     console.log('[OmniRecord] First camera data from API:', rawPlant.cameras[0]);
   }
@@ -446,38 +463,15 @@ async function augmentPlantData(
     };
   };
 
-  let augmentedCameras: Camera[] = rawPlant.cameras
-    .filter((cam: any) => {
-      // If we successfully fetched valid recordings, use them exclusively to filter!
-      if (validCameraPaths && validCameraPaths.size > 0) {
-        return validCameraPaths.has(cam.path) || validCameraPaths.has(cam.name) || validCameraPaths.has(cam.relayUri);
-      }
-      
-      // Fallback relaxed filter if recordings API failed or returned empty
-      return cam.recording == true || 
-             cam.recording === 1 || 
-             cam.recording === 'true' || 
-             cam.hasRecordings == true || 
-             cam.isRecording == true;
-    })
+  // Only keep 360 cameras from raw plant data; replace any mock RTSP cameras with real Hikvision NVR channels
+  const cameras360 = rawPlant.cameras
+    .filter((cam: any) => cam.name.includes('RTMP') || (cam.relayUri && !cam.relayUri.startsWith('rtsp')))
     .map(mapCamera);
 
-  // Fallback: If the filter removed everything (e.g. the property name is different), show all cameras so the app isn't broken.
-  if (augmentedCameras.length === 0 && rawPlant.cameras.length > 0) {
-    console.warn('[OmniRecord] The recording filter removed all cameras! Falling back to showing all cameras.');
-    augmentedCameras = rawPlant.cameras.map(mapCamera);
-  }
-
-  // Inject actual NVR cameras from the Hikvision API!
+  // Fetch or default the 12 Hikvision NVR channels
   let actualNvrCameras = await fetchActualNvrCameras(apiBaseUrl);
-  if (actualNvrCameras.length === 0) {
-    console.log('[OmniRecord] No real NVR cameras found, falling back to mock ones for UI testing.');
-    actualNvrCameras = getMockPlantData('mock', apiBaseUrl).cameras.filter((c) => c.type === 'nvr');
-  } else {
-    console.log(`[OmniRecord] Successfully fetched ${actualNvrCameras.length} REAL cameras from NVR!`);
-  }
-  
-  augmentedCameras = [...augmentedCameras, ...actualNvrCameras];
+
+  const augmentedCameras = [...cameras360, ...actualNvrCameras];
 
   return {
     ...rawPlant,
