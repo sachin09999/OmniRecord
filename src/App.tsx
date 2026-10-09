@@ -10,6 +10,7 @@ import { CameraRecordingsScreen } from './components/CameraRecordingsScreen';
 import { FloatingStickyNote } from './components/FloatingStickyNote';
 import { ApiSettingsModal } from './components/ApiSettingsModal';
 import { AdminConfigModal } from './components/AdminConfigModal';
+import { AdminConfigPage } from './components/AdminConfigPage';
 import { ModernLoadingSpinner } from './components/ModernLoadingSpinner';
 import {
   Compass,
@@ -52,8 +53,34 @@ export function App() {
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'map'>('grid');
   const [cameraTypeFilter, setCameraTypeFilter] = useState<'all' | '360' | 'rtsp'>('all');
 
-  // Multi-page navigation state
-  const [pageScreen, setPageScreen] = useState<'dashboard' | 'grid' | 'recordings' | 'viewer'>('dashboard');
+  // Multi-page navigation state (supports /admin route)
+  const [pageScreen, setPageScreen] = useState<'dashboard' | 'grid' | 'recordings' | 'viewer' | 'admin'>(() => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      const hash = window.location.hash;
+      if (path.startsWith('/admin') || path.startsWith('/config') || hash.includes('admin') || hash.includes('config')) {
+        return 'admin';
+      }
+    }
+    return 'dashboard';
+  });
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (typeof window !== 'undefined') {
+        const path = window.location.pathname;
+        const hash = window.location.hash;
+        if (path.startsWith('/admin') || path.startsWith('/config') || hash.includes('admin') || hash.includes('config')) {
+          setPageScreen('admin');
+        } else if (pageScreen === 'admin') {
+          setPageScreen('dashboard');
+        }
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [pageScreen]);
+
   const [activeCamera, setActiveCamera] = useState<Camera | null>(null);
   const [selectedRecording, setSelectedRecording] = useState<RecordingItem | null>(null);
 
@@ -204,6 +231,27 @@ export function App() {
       );
     }
 
+    // Admin System Configuration Route Screen (/admin)
+    if (pageScreen === 'admin') {
+      return (
+        <AdminConfigPage
+          theme={theme}
+          onBackToDashboard={() => {
+            if (typeof window !== 'undefined') {
+              window.history.pushState({}, '', '/');
+            }
+            setPageScreen('dashboard');
+          }}
+          onConfigSaved={(newConfig) => {
+            setAppConfig(newConfig);
+            setApiBaseUrl(newConfig.cupolaApiBaseUrl);
+            setPlantId(newConfig.plantId);
+            setAuthToken(newConfig.authToken);
+          }}
+        />
+      );
+    }
+
     // Page 1: Main Camera Overview & Grid Page
     return (
       <div className={`min-h-screen transition-colors duration-200 flex flex-col ${
@@ -220,7 +268,12 @@ export function App() {
           viewMode={viewMode}
           onViewModeChange={setViewMode}
           onOpenSettings={() => setIsSettingsOpen(true)}
-          onOpenAdminConfig={() => setIsAdminConfigOpen(true)}
+          onOpenAdminConfig={() => {
+            if (typeof window !== 'undefined') {
+              window.history.pushState({}, '', '/admin');
+            }
+            setPageScreen('admin');
+          }}
           liveStatus={isLiveConnected}
           totalCameras={plantData?.cameras.length || 0}
           theme={theme}
