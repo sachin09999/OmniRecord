@@ -31,6 +31,7 @@ const generateSyntheticNvrRecordings = (trackID: string, startTime: Date, _endTi
 
     if (chunkStart > now) break;
 
+    const cleanChan = trackID.replace(/\D/g, '') || '1';
     recs.push({
       _id: `nvr-synth-${paddedTrackID}-${chunkStart.toISOString()}`,
       cameraPath: `nvr_${paddedTrackID}`,
@@ -38,7 +39,7 @@ const generateSyntheticNvrRecordings = (trackID: string, startTime: Date, _endTi
       endTime: chunkEnd.toISOString(),
       videoPath: `/api/nvr/ISAPI/Streaming/tracks/${paddedTrackID}`,
       duration: 3600,
-      thumbnailUrl: `/api/nvr/ISAPI/Streaming/channels/${paddedTrackID}/picture`
+      thumbnailUrl: `/api/frame.jpeg?src=nvr_${cleanChan}`
     });
   }
 
@@ -110,6 +111,7 @@ export const fetchNvrRecordings = async (
         }
         
         if (rawChunks.length > 0) {
+          const cleanChan = trackID.replace(/\D/g, '') || '1';
           const recordings: RecordingItem[] = rawChunks.map(chunk => ({
             _id: `nvr-${candTrackID}-${chunk.start.toISOString()}`,
             cameraPath: `nvr_${candTrackID}`,
@@ -117,7 +119,7 @@ export const fetchNvrRecordings = async (
             endTime: chunk.end.toISOString(),
             videoPath: chunk.playbackURI || '', 
             duration: Math.round((chunk.end.getTime() - chunk.start.getTime()) / 1000),
-            thumbnailUrl: `/api/nvr/ISAPI/Streaming/channels/${candTrackID}/picture`
+            thumbnailUrl: `/api/frame.jpeg?src=nvr_${cleanChan}`
           }));
           
           recordings.sort((a, b) => new Date(b.startTime || 0).getTime() - new Date(a.startTime || 0).getTime());

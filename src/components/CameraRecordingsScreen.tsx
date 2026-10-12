@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { Camera, RecordingItem } from '../types/camera';
 import { fetchCameraRecordings, extractCameraPath, resolveApiUrl, resolveRecordingThumbnailUrl, downloadVideoFile } from '../services/apiService';
 import { fetchNvrRecordings } from '../services/nvrService';
-import { getAppConfig, buildNvrRtspCredentials } from '../services/configService';
 import { ModernCalendarPicker } from './ModernCalendarPicker';
 import { ModernLoadingSpinner } from './ModernLoadingSpinner';
 
@@ -41,6 +40,121 @@ interface HourGroup {
   clips: RecordingItem[];
   totalDurationSec: number;
 }
+
+interface RecordingThumbnailProps {
+  thumbUrl: string;
+  fallbackUrl?: string;
+  cameraName: string;
+  channelId?: string;
+  hourLabel: string;
+  dateStr: string;
+  isList?: boolean;
+}
+
+const RecordingThumbnail: React.FC<RecordingThumbnailProps> = ({
+  thumbUrl,
+  fallbackUrl,
+  cameraName,
+  channelId,
+  hourLabel,
+  dateStr,
+  isList = false,
+}) => {
+  const [currentSrc, setCurrentSrc] = useState<string>(thumbUrl || fallbackUrl || '');
+  const [hasError, setHasError] = useState<boolean>(false);
+  const [isLoaded, setIsLoaded] = useState<boolean>(false);
+
+  useEffect(() => {
+    setCurrentSrc(thumbUrl || fallbackUrl || '');
+    setHasError(false);
+    setIsLoaded(false);
+  }, [thumbUrl, fallbackUrl]);
+
+  const handleError = () => {
+    if (fallbackUrl && currentSrc !== fallbackUrl) {
+      setCurrentSrc(fallbackUrl);
+      setIsLoaded(false);
+    } else {
+      setHasError(true);
+    }
+  };
+
+  const startHour = hourLabel.split(' - ')[0] || '00:00';
+
+  if (isList) {
+    return (
+      <div className="w-full h-full relative overflow-hidden bg-slate-950 flex items-center justify-center">
+        {!hasError && currentSrc && (
+          <img
+            src={currentSrc}
+            alt="Thumbnail"
+            className={`w-full h-full object-cover transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+            onLoad={() => setIsLoaded(true)}
+            onError={handleError}
+          />
+        )}
+        {(!isLoaded || hasError) && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-indigo-950/60 text-slate-400 p-1">
+            <Video className="w-4 h-4 text-indigo-400 opacity-80 mb-0.5" />
+            <span className="text-[8px] font-mono font-bold text-slate-300">{startHour}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-full relative overflow-hidden bg-slate-950 flex items-center justify-center select-none">
+      {/* 1. Underlying High-Tech CCTV Surveillance Poster Background */}
+      <div className="absolute inset-0 flex flex-col justify-between p-3 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/60">
+        {/* Subtle grid pattern */}
+        <div className="absolute inset-0 bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:12px_12px] opacity-35 pointer-events-none"></div>
+
+        {/* Top: Camera Name + Channel Badge */}
+        <div className="relative z-0 flex items-center justify-between">
+          <div className="flex items-center gap-1.5 bg-black/60 px-2 py-0.5 rounded border border-slate-700/60 text-[10px] font-mono text-slate-300 backdrop-blur-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="font-semibold tracking-wide truncate max-w-[120px]">{cameraName}</span>
+          </div>
+          {channelId && (
+            <span className="text-[9px] font-mono font-bold text-indigo-300 bg-indigo-950/80 px-1.5 py-0.5 rounded border border-indigo-700/50 uppercase">
+              CH {channelId}
+            </span>
+          )}
+        </div>
+
+        {/* Center: Camera Watermark Icon */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
+          <Video className="w-20 h-20 text-indigo-400" />
+        </div>
+
+        {/* Bottom: CCTV Date/Time Stamp + REC Pill */}
+        <div className="relative z-0 flex items-center justify-between text-[10px] font-mono text-slate-400">
+          <span className="tracking-wider bg-black/50 px-1.5 py-0.5 rounded border border-slate-800">
+            {dateStr} {startHour}:00
+          </span>
+          <span className="text-[9px] text-emerald-400 font-bold bg-emerald-950/70 px-1.5 py-0.5 rounded border border-emerald-700/50 flex items-center gap-1">
+            <span className="w-1 h-1 rounded-full bg-emerald-400"></span>
+            REC
+          </span>
+        </div>
+      </div>
+
+      {/* 2. Image Layer (Fades in over CCTV frame when snapshot loads) */}
+      {!hasError && currentSrc && (
+        <img
+          src={currentSrc}
+          alt={`${cameraName} ${hourLabel}`}
+          className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-all duration-300 ${
+            isLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
+          onLoad={() => setIsLoaded(true)}
+          onError={handleError}
+        />
+      )}
+    </div>
+  );
+};
 
 export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
   camera,
@@ -231,58 +345,6 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
     return groups;
   }, [recordings, sortOrder]);
 
-  // Helper function to build sanitized NVR RTSP Playback URL for go2rtc
-  const buildNvrRtspUrl = (rec?: RecordingItem): string => {
-    if (!rec) return '';
-    const currentCfg = getAppConfig();
-    const rawChan = camera.nvrChannelId || '1';
-    const rtspChan = rawChan.length < 3 ? `${rawChan}01` : rawChan;
-    
-    const dStart = new Date(rec.startTime || selectedDate);
-    const dEnd = rec.endTime ? new Date(rec.endTime) : new Date(dStart.getTime() + (rec.duration || 3600) * 1000);
-    
-    const yyyy1 = dStart.getFullYear();
-    const mm1 = String(dStart.getMonth() + 1).padStart(2, '0');
-    const dd1 = String(dStart.getDate()).padStart(2, '0');
-    const hh1 = String(dStart.getHours()).padStart(2, '0');
-    const mi1 = String(dStart.getMinutes()).padStart(2, '0');
-    const ss1 = String(dStart.getSeconds()).padStart(2, '0');
-    const startStr = `${yyyy1}${mm1}${dd1}T${hh1}${mi1}${ss1}Z`;
-
-    const yyyy2 = dEnd.getFullYear();
-    const mm2 = String(dEnd.getMonth() + 1).padStart(2, '0');
-    const dd2 = String(dEnd.getDate()).padStart(2, '0');
-    const hh2 = String(dEnd.getHours()).padStart(2, '0');
-    const mi2 = String(dEnd.getMinutes()).padStart(2, '0');
-    const ss2 = String(dEnd.getSeconds()).padStart(2, '0');
-    const endStr = `${yyyy2}${mm2}${dd2}T${hh2}${mi2}${ss2}Z`;
-
-    const creds = buildNvrRtspCredentials(currentCfg);
-
-    let baseRtsp = rec.videoPath && rec.videoPath.includes('rtsp://') 
-      ? rec.videoPath 
-      : `rtsp://${currentCfg.nvrIp}:${currentCfg.nvrRtspPort}/Streaming/tracks/${rtspChan}?starttime=${startStr}&endtime=${endStr}`;
-
-    // Inject credentials if missing (Hikvision ISAPI search returns playbackURI without auth)
-    if (!baseRtsp.includes('@')) {
-      baseRtsp = baseRtsp.replace('rtsp://', `rtsp://${creds}@`);
-    }
-
-    return baseRtsp;
-  };
-
-  // Helper function to resolve video media source URL
-  const getVideoMediaUrl = (rec?: RecordingItem): string => {
-    if (!rec) return '';
-
-    if (camera.type === 'nvr' || (rec._id && rec._id.startsWith('nvr-'))) {
-      const rtspPlaybackUri = buildNvrRtspUrl(rec);
-      return `/api/stream.mp4?src=${encodeURIComponent(rtspPlaybackUri)}`;
-    }
-
-    return rec.videoUrl || (rec.videoPath ? resolveApiUrl(apiBaseUrl, rec.videoPath) : '');
-  };
-
   const getVideoDownloadUrl = (rec?: RecordingItem): string => {
     if (!rec) return '';
 
@@ -290,9 +352,7 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
     if (camera.type === '360' || (camera.relayUri && camera.relayUri.startsWith('RTMP_'))) {
       let absoluteVidUrl = rec.videoUrl || '';
       if (!absoluteVidUrl && rec.videoPath) {
-        const cleanPath = rec.videoPath.startsWith('/') ? rec.videoPath : `/${rec.videoPath}`;
-        const cleanBase = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
-        absoluteVidUrl = `${cleanBase}${cleanPath}`;
+        absoluteVidUrl = resolveApiUrl(apiBaseUrl, rec.videoPath);
       }
 
       if (!absoluteVidUrl) return '';
@@ -485,7 +545,7 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
               const totalMin = Math.round(group.totalDurationSec / 60);
               const firstClip = group.clips[0];
               const thumbUrl = resolveRecordingThumbnailUrl(apiBaseUrl, firstClip, authToken);
-              const mediaUrl = getVideoMediaUrl(firstClip);
+              const fallbackThumb = camera.thumbnailUrl || (camera.nvrChannelId ? `/api/frame.jpeg?src=nvr_${camera.nvrChannelId}` : camera.panoramaUrl || '');
               const downloadUrl = getVideoDownloadUrl(firstClip);
               const isGroupActive = Boolean(activeRecording && group.clips.some(c => c._id === activeRecording._id));
 
@@ -503,26 +563,14 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                 >
                   {/* Hour Block Visual Thumbnail Header */}
                   <div className="relative h-44 bg-slate-950 overflow-hidden flex items-center justify-center">
-                    {thumbUrl ? (
-                      <img
-                        src={thumbUrl}
-                        alt="Hour Thumbnail"
-                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    ) : mediaUrl ? (
-                      <video
-                        src={`${mediaUrl}#t=1`}
-                        preload="metadata"
-                        muted
-                        playsInline
-                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                      />
-                    ) : (
-                      <Film className="w-10 h-10 text-gray-600" />
-                    )}
+                    <RecordingThumbnail
+                      thumbUrl={thumbUrl}
+                      fallbackUrl={fallbackThumb}
+                      cameraName={camera.name}
+                      channelId={camera.nvrChannelId}
+                      hourLabel={group.hourLabel}
+                      dateStr={selectedDate}
+                    />
 
                     {/* Dark Gradient Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent flex flex-col justify-between p-3">
@@ -594,7 +642,6 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
               const totalMin = Math.round(group.totalDurationSec / 60);
               const firstClip = group.clips[0];
               const thumbUrl = resolveRecordingThumbnailUrl(apiBaseUrl, firstClip, authToken);
-              const mediaUrl = getVideoMediaUrl(firstClip);
               const downloadUrl = getVideoDownloadUrl(firstClip);
 
               return (
@@ -607,24 +654,16 @@ export const CameraRecordingsScreen: React.FC<CameraRecordingsScreenProps> = ({
                 >
                   <div className="flex items-center gap-4">
                     {/* Video Thumbnail */}
-                    <div className="w-24 h-14 bg-slate-900 rounded-lg overflow-hidden shrink-0 relative flex items-center justify-center border border-gray-200">
-                      {thumbUrl ? (
-                        <img
-                          src={thumbUrl}
-                          alt="Thumbnail"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : mediaUrl ? (
-                        <video
-                          src={`${mediaUrl}#t=1`}
-                          preload="metadata"
-                          muted
-                          playsInline
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <Video className="w-4 h-4 text-gray-500" />
-                      )}
+                    <div className="w-24 h-14 bg-slate-900 rounded-lg overflow-hidden shrink-0 relative flex items-center justify-center border border-gray-700">
+                      <RecordingThumbnail
+                        thumbUrl={thumbUrl}
+                        fallbackUrl={camera.thumbnailUrl || (camera.nvrChannelId ? `/api/frame.jpeg?src=nvr_${camera.nvrChannelId}` : camera.panoramaUrl || '')}
+                        cameraName={camera.name}
+                        channelId={camera.nvrChannelId}
+                        hourLabel={group.hourLabel}
+                        dateStr={selectedDate}
+                        isList
+                      />
                       <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/50 transition">
                         <Play className="w-5 h-5 text-white fill-current opacity-90 group-hover:scale-110 transition" />
                       </div>

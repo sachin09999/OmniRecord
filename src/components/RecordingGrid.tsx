@@ -143,10 +143,28 @@ export const RecordingGrid: React.FC<RecordingGridProps> = ({
               <div className={`relative aspect-video rounded-xl overflow-hidden mb-3 border shadow-inner flex items-center justify-center ${
                 isDark ? 'bg-slate-950 border-slate-800' : 'bg-gray-100 border-gray-200'
               }`}>
-                {/* Fallback Camera Badge (renders behind img or when img errors) */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 text-slate-500 gap-1.5 z-0 pointer-events-none">
-                  <Video className="w-8 h-8 text-indigo-400 opacity-60" />
-                  <span className="text-[10px] font-mono text-indigo-300 font-semibold tracking-wider uppercase">Live Camera Feed</span>
+                {/* Fallback Camera Frame (renders behind img or when img errors) */}
+                <div className="absolute inset-0 flex flex-col justify-between p-2.5 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/50 text-slate-400 z-0 pointer-events-none select-none">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono font-bold text-slate-300 bg-black/60 px-1.5 py-0.5 rounded border border-slate-700/60 truncate max-w-[130px]">
+                      {cam.name}
+                    </span>
+                    {cam.nvrChannelId && (
+                      <span className="text-[9px] font-mono text-indigo-400 bg-indigo-950/80 px-1 py-0.5 rounded border border-indigo-800/60 font-semibold">
+                        CH {cam.nvrChannelId}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-center opacity-30">
+                    <Video className="w-10 h-10 text-indigo-400" />
+                  </div>
+                  <div className="flex items-center justify-between text-[9px] font-mono text-slate-400">
+                    <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      ONLINE
+                    </span>
+                    <span className="text-slate-400">1080P HD</span>
+                  </div>
                 </div>
 
                 {cam.thumbnailUrl || cam.panoramaUrl ? (

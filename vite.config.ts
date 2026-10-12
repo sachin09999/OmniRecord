@@ -31,6 +31,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      // Proxy for go2rtc frame JPEG snapshot
+      '/api/frame.jpeg': {
+        target: 'http://127.0.0.1:1984',
+        changeOrigin: true,
+        secure: false,
+      },
       // Proxy for go2rtc MP4 streaming/downloading without timeout
       '/api/stream.mp4': {
         target: 'http://127.0.0.1:1984',
